@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0047)file:///Users/jorgecalix/Downloads/index_7.html -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="La Roca CRM">
 <meta name="theme-color" content="#3b6ef0">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="file:///Users/jorgecalix/Downloads/manifest.json">
 <title>La Roca CRM</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="./index_files/xlsx.full.min.js"></script>
+<script src="./index_files/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1d23;font-size:14px;min-height:100vh}
@@ -176,10 +176,10 @@ button{cursor:pointer}
     <div class="llogo"><div class="llogo-ic">🏢</div><h1>La Roca CRM</h1><p>Ingresa tu PIN para continuar</p></div>
     <div class="pdots"><div class="pd" id="pd0">·</div><div class="pd" id="pd1">·</div><div class="pd" id="pd2">·</div><div class="pd" id="pd3">·</div></div>
     <div class="numpad">
-      <button class="nb" onclick="pi('1')">1</button><button class="nb" onclick="pi('2')">2</button><button class="nb" onclick="pi('3')">3</button>
-      <button class="nb" onclick="pi('4')">4</button><button class="nb" onclick="pi('5')">5</button><button class="nb" onclick="pi('6')">6</button>
-      <button class="nb" onclick="pi('7')">7</button><button class="nb" onclick="pi('8')">8</button><button class="nb" onclick="pi('9')">9</button>
-      <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi('0')">0</button><button class="nb sm" onclick="pinDel()">&#9003;</button>
+      <button class="nb" onclick="pi(&#39;1&#39;)">1</button><button class="nb" onclick="pi(&#39;2&#39;)">2</button><button class="nb" onclick="pi(&#39;3&#39;)">3</button>
+      <button class="nb" onclick="pi(&#39;4&#39;)">4</button><button class="nb" onclick="pi(&#39;5&#39;)">5</button><button class="nb" onclick="pi(&#39;6&#39;)">6</button>
+      <button class="nb" onclick="pi(&#39;7&#39;)">7</button><button class="nb" onclick="pi(&#39;8&#39;)">8</button><button class="nb" onclick="pi(&#39;9&#39;)">9</button>
+      <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi(&#39;0&#39;)">0</button><button class="nb sm" onclick="pinDel()">⌫</button>
     </div>
     <div class="lerr" id="lerr"></div>
   </div>
@@ -190,7 +190,7 @@ button{cursor:pointer}
     <div style="font-size:36px;margin-bottom:10px">👋</div>
     <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">¡Bienvenido!</h2>
     <p id="sn-cart" style="font-size:12px;color:var(--t2)">Cartera asignada</p>
-    <input class="fi" id="inp-nom" placeholder="Escribe tu nombre completo" onkeydown="if(event.key==='Enter')guardarNom()" />
+    <input class="fi" id="inp-nom" placeholder="Escribe tu nombre completo" onkeydown="if(event.key===&#39;Enter&#39;)guardarNom()">
     <button class="btn-blue" onclick="guardarNom()">Entrar →</button>
     <div class="lerr" id="nom-err"></div>
   </div>
@@ -202,11 +202,11 @@ button{cursor:pointer}
     <div class="sb-brand"><div class="sb-dot"></div>La Roca CRM</div>
     <div class="sb-user"><div class="av" id="sb-av">?</div><div><div class="sb-uname" id="sb-un">—</div><div class="sb-urole" id="sb-ur">—</div></div></div>
     <div class="sb-nav" id="sb-nav"></div>
-    <div class="sb-foot"><button class="btn-out" onclick="doLogout()">&#x2192; Cambiar usuario</button></div>
+    <div class="sb-foot"><button class="btn-out" onclick="doLogout()">→ Cambiar usuario</button></div>
   </nav>
   <div class="main">
     <div class="topbar">
-      <button class="hburg" onclick="openSB()">&#9776;</button>
+      <button class="hburg" onclick="openSB()">☰</button>
       <span class="tb-ttl" id="tb-ttl">Inicio</span>
       <span class="tb-chip" id="tb-chip" style="display:none"></span>
     </div>
@@ -216,15 +216,15 @@ button{cursor:pointer}
 <!-- MODAL CLIENTE -->
 <div class="mov" id="mov-cl">
   <div class="modal">
-    <div class="mh"><div class="mh-l"><div class="av" id="mc-av" style="width:34px;height:34px;font-size:13px">?</div><div><div class="mh-name" id="mc-nm">—</div><div id="mc-cat" style="font-size:11px;margin-top:2px"></div></div></div><div class="mclose" onclick="closeMov('mov-cl')">&#x2715;</div></div>
+    <div class="mh"><div class="mh-l"><div class="av" id="mc-av" style="width:34px;height:34px;font-size:13px">?</div><div><div class="mh-name" id="mc-nm">—</div><div id="mc-cat" style="font-size:11px;margin-top:2px"></div></div></div><div class="mclose" onclick="closeMov(&#39;mov-cl&#39;)">✕</div></div>
     <div class="mbody" id="mc-body"></div>
-    <div class="mfoot" id="mfoot-cl"><button class="btn-s" onclick="closeMov('mov-cl')">Cerrar</button><button class="btn-p" onclick="openCallF()">&#128222; Registrar gestión</button></div>
+    <div class="mfoot" id="mfoot-cl"><button class="btn-s" onclick="closeMov(&#39;mov-cl&#39;)">Cerrar</button><button class="btn-p" onclick="openCallF()">📞 Registrar gestión</button></div>
   </div>
 </div>
 <!-- MODAL GESTIÓN -->
 <div class="mov" id="mov-call">
   <div class="modal">
-    <div class="mh"><span class="mh-name">&#128222; Registrar gestión</span><div class="mclose" onclick="closeMov('mov-call')">&#x2715;</div></div>
+    <div class="mh"><span class="mh-name">📞 Registrar gestión</span><div class="mclose" onclick="closeMov(&#39;mov-call&#39;)">✕</div></div>
     <div class="mbody">
       <div class="frow">
         <div class="fg"><label class="fl">Resultado</label>
@@ -242,32 +242,32 @@ button{cursor:pointer}
             <option value="pago">✅ Pagó</option><option value="urgente">🔴 Urgente</option><option value="pendiente">⏳ Pendiente</option>
           </select></div>
       </div>
-      <div class="fg"><label class="fl">Número alterno</label><input class="finp" id="f-num2" placeholder="Ej: 9876-5432" /></div>
-      <div class="fg"><label class="fl">Producto ofrecido</label><input class="finp" id="f-prod" placeholder="Ej: Moto Honda Wave..." /></div>
+      <div class="fg"><label class="fl">Número alterno</label><input class="finp" id="f-num2" placeholder="Ej: 9876-5432"></div>
+      <div class="fg"><label class="fl">Producto ofrecido</label><input class="finp" id="f-prod" placeholder="Ej: Moto Honda Wave..."></div>
       <div class="fg"><label class="fl">Notas</label><textarea class="ftxt" id="f-nota" placeholder="¿Qué dijo? ¿Compromisos?"></textarea></div>
     </div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-call')">Cancelar</button><button class="btn-p" onclick="saveCall()">Guardar</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-call&#39;)">Cancelar</button><button class="btn-p" onclick="saveCall()">Guardar</button></div>
   </div>
 </div>
 <!-- MODAL DÍA -->
 <div class="mov" id="mov-dia">
   <div class="modal">
-    <div class="mh"><span class="mh-name" id="mov-dia-ttl">Gestiones</span><div class="mclose" onclick="closeMov('mov-dia')">&#x2715;</div></div>
+    <div class="mh"><span class="mh-name" id="mov-dia-ttl">Gestiones</span><div class="mclose" onclick="closeMov(&#39;mov-dia&#39;)">✕</div></div>
     <div class="mbody" id="mov-dia-body"></div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-dia')">Cerrar</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-dia&#39;)">Cerrar</button></div>
   </div>
 </div>
 <!-- MODAL USUARIO -->
 <div class="mov" id="mov-usr">
   <div class="modal">
-    <div class="mh"><span class="mh-name">&#128100; Nuevo usuario</span><div class="mclose" onclick="closeMov('mov-usr')">&#x2715;</div></div>
+    <div class="mh"><span class="mh-name">👤 Nuevo usuario</span><div class="mclose" onclick="closeMov(&#39;mov-usr&#39;)">✕</div></div>
     <div class="mbody">
-      <div class="fg"><label class="fl">Nombre</label><input class="finp" id="nu-nm" placeholder="Nombre completo" /></div>
+      <div class="fg"><label class="fl">Nombre</label><input class="finp" id="nu-nm" placeholder="Nombre completo"></div>
       <div class="fg"><label class="fl">Rol</label><select class="fsel" id="nu-rol"><option value="vendedor">Vendedor</option><option value="subadmin">Gerente de tienda</option></select></div>
       <div class="fg"><label class="fl">Cartera</label><select class="fsel" id="nu-cart"></select></div>
-      <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="finp" id="nu-pin" placeholder="0000" maxlength="4" type="tel" /></div>
+      <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="finp" id="nu-pin" placeholder="0000" maxlength="4" type="tel"></div>
     </div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-usr')">Cancelar</button><button class="btn-p" onclick="saveUsr()">Crear</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-usr&#39;)">Cancelar</button><button class="btn-p" onclick="saveUsr()">Crear</button></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -833,5 +833,5 @@ window.addEventListener('DOMContentLoaded',initLogin);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 
 </script>
-</body>
-</html>
+
+</body></html>
