@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<!-- saved from url=(0053)file:///Users/jorgecalix/Downloads/La_Roca_CRM_1.html -->
-<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="es">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="La Roca CRM">
 <meta name="theme-color" content="#3b6ef0">
-<link rel="manifest" href="file:///manifest.json">
+<link rel="manifest" href="manifest.json">
 <title>La Roca CRM</title>
-<script src="./La Roca CRM_files/xlsx.full.min.js"></script>
-<script src="./La Roca CRM_files/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1d23;font-size:14px;min-height:100vh}
@@ -176,10 +176,10 @@ button{cursor:pointer}
     <div class="llogo"><div class="llogo-ic">🏢</div><h1>La Roca CRM</h1><p>Ingresa tu PIN para continuar</p></div>
     <div class="pdots"><div class="pd" id="pd0">·</div><div class="pd" id="pd1">·</div><div class="pd" id="pd2">·</div><div class="pd" id="pd3">·</div></div>
     <div class="numpad">
-      <button class="nb" onclick="pi(&#39;1&#39;)">1</button><button class="nb" onclick="pi(&#39;2&#39;)">2</button><button class="nb" onclick="pi(&#39;3&#39;)">3</button>
-      <button class="nb" onclick="pi(&#39;4&#39;)">4</button><button class="nb" onclick="pi(&#39;5&#39;)">5</button><button class="nb" onclick="pi(&#39;6&#39;)">6</button>
-      <button class="nb" onclick="pi(&#39;7&#39;)">7</button><button class="nb" onclick="pi(&#39;8&#39;)">8</button><button class="nb" onclick="pi(&#39;9&#39;)">9</button>
-      <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi(&#39;0&#39;)">0</button><button class="nb sm" onclick="pinDel()">⌫</button>
+      <button class="nb" onclick="pi('1')">1</button><button class="nb" onclick="pi('2')">2</button><button class="nb" onclick="pi('3')">3</button>
+      <button class="nb" onclick="pi('4')">4</button><button class="nb" onclick="pi('5')">5</button><button class="nb" onclick="pi('6')">6</button>
+      <button class="nb" onclick="pi('7')">7</button><button class="nb" onclick="pi('8')">8</button><button class="nb" onclick="pi('9')">9</button>
+      <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi('0')">0</button><button class="nb sm" onclick="pinDel()">&#9003;</button>
     </div>
     <div class="lerr" id="lerr"></div>
   </div>
@@ -190,7 +190,7 @@ button{cursor:pointer}
     <div style="font-size:36px;margin-bottom:10px">👋</div>
     <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">¡Bienvenido!</h2>
     <p id="sn-cart" style="font-size:12px;color:var(--t2)">Cartera asignada</p>
-    <input class="fi" id="inp-nom" placeholder="Escribe tu nombre completo" onkeydown="if(event.key===&#39;Enter&#39;)guardarNom()">
+    <input class="fi" id="inp-nom" placeholder="Escribe tu nombre completo" onkeydown="if(event.key==='Enter')guardarNom()" />
     <button class="btn-blue" onclick="guardarNom()">Entrar →</button>
     <div class="lerr" id="nom-err"></div>
   </div>
@@ -200,31 +200,31 @@ button{cursor:pointer}
   <div class="sb-ov" id="sb-ov" onclick="closeSB()"></div>
   <nav class="sb" id="sidebar">
     <div class="sb-brand"><div class="sb-dot"></div>La Roca CRM</div>
-    <div class="sb-user"><div class="av" id="sb-av">J</div><div><div class="sb-uname" id="sb-un">Jorge Daniel</div><div class="sb-urole" id="sb-ur">Administrador</div></div></div>
-    <div class="sb-nav" id="sb-nav"><div style="padding: 8px 6px 4px; font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;">Principal</div><div class="ni" id="ni-dashboard">📊 Dashboard</div><div class="ni" id="ni-clientes">👥 Clientes</div><div class="ni" id="ni-kanban">⊞ Kanban</div><div class="ni on" id="ni-seguimiento">📅 Seguimiento</div><div style="padding: 8px 6px 4px; font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;">Gestión</div><div class="ni" id="ni-subir">↑ Subir cartera</div><div class="ni" id="ni-equipo">👤 Equipo</div></div>
-    <div class="sb-foot"><button class="btn-out" onclick="doLogout()">→ Cambiar usuario</button></div>
+    <div class="sb-user"><div class="av" id="sb-av">?</div><div><div class="sb-uname" id="sb-un">—</div><div class="sb-urole" id="sb-ur">—</div></div></div>
+    <div class="sb-nav" id="sb-nav"></div>
+    <div class="sb-foot"><button class="btn-out" onclick="doLogout()">&#x2192; Cambiar usuario</button></div>
   </nav>
   <div class="main">
     <div class="topbar">
-      <button class="hburg" onclick="openSB()">☰</button>
-      <span class="tb-ttl" id="tb-ttl">Seguimiento</span>
+      <button class="hburg" onclick="openSB()">&#9776;</button>
+      <span class="tb-ttl" id="tb-ttl">Inicio</span>
       <span class="tb-chip" id="tb-chip" style="display:none"></span>
     </div>
-    <div class="pcontent" id="pcontent"><div class="filter-row" id="cp-seg"><div class="ytab on" onclick="setSegCart(null,this)">Todas</div><div class="ytab " data-cid="roca1" onclick="setSegCart(this.dataset.cid,this)">Roca 1</div><div class="ytab " data-cid="roca2" onclick="setSegCart(this.dataset.cid,this)">Roca 1 Motos</div><div class="ytab " data-cid="mueble" onclick="setSegCart(this.dataset.cid,this)">Roca 2 Motos</div><div class="ytab " data-cid="moto1" onclick="setSegCart(this.dataset.cid,this)">Su Mueble</div><div class="ytab " data-cid="moto2" onclick="setSegCart(this.dataset.cid,this)">Su Moto</div></div><div id="seg-sum" style="margin-bottom:14px;"><div class="chart-card"><div class="chart-ttl">Resumen del equipo hoy</div><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr><th style="text-align:left;padding:6px 10px;border-bottom:1px solid #e2e5eb;font-size:10px;color:#9299a8;text-transform:uppercase;">Vendedor</th><th style="text-align:left;padding:6px 10px;border-bottom:1px solid #e2e5eb;font-size:10px;color:#9299a8;text-transform:uppercase;">Cartera</th><th style="text-align:center;padding:6px 10px;border-bottom:1px solid #e2e5eb;font-size:10px;color:#9299a8;text-transform:uppercase;">Hoy</th><th style="text-align:center;padding:6px 10px;border-bottom:1px solid #e2e5eb;font-size:10px;color:#9299a8;text-transform:uppercase;">Total</th></tr></thead><tbody><tr><td style="padding:8px 10px;font-weight:600;">fer</td><td style="padding:8px 10px;color:#5a6072;">Roca 1</td><td style="padding:8px 10px;text-align:center;font-weight:700;color:#9299a8;">0</td><td style="padding:8px 10px;text-align:center;color:#5a6072;">31</td></tr><tr><td style="padding:8px 10px;font-weight:600;">Jorge Daniel</td><td style="padding:8px 10px;color:#5a6072;">Roca 1</td><td style="padding:8px 10px;text-align:center;font-weight:700;color:#9299a8;">0</td><td style="padding:8px 10px;text-align:center;color:#5a6072;">12</td></tr><tr><td style="padding:8px 10px;font-weight:600;">ale</td><td style="padding:8px 10px;color:#5a6072;">Roca 1</td><td style="padding:8px 10px;text-align:center;font-weight:700;color:#9299a8;">0</td><td style="padding:8px 10px;text-align:center;color:#5a6072;">4</td></tr></tbody></table></div></div><div class="ch2"><div class="chart-card"><div class="chart-ttl">Gestiones por vendedor (este mes — clic para ver)</div><canvas id="ch-sv" height="920" style="display: block; box-sizing: border-box; height: 460px; width: 690px;" width="1380"></canvas></div><div class="chart-card"><div class="chart-ttl">Etapas Kanban — clientes gestionados</div><canvas id="ch-sr" height="1372" width="1372" style="display: block; box-sizing: border-box; height: 686px; width: 686px;"></canvas></div></div><div class="chart-card"><div class="cal-nav"><button onclick="calPrev()">← Anterior</button><h3 id="cal-ttl">Mayo 2026</h3><button onclick="calNext()">Siguiente →</button></div><div class="cal-grid" id="cal-grid"><div class="cal-hdr">Dom</div><div class="cal-hdr">Lun</div><div class="cal-hdr">Mar</div><div class="cal-hdr">Mié</div><div class="cal-hdr">Jue</div><div class="cal-hdr">Vie</div><div class="cal-hdr">Sáb</div><div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">1</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">2</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">3</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">4</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">5</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">6</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">7</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">8</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">9</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">10</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">11</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">12</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">13</div></div><div class="cal-day hc" onclick="openDia(&#39;2026-05-14&#39;)" style="cursor:pointer;"><div class="cal-dn">14</div><div class="cal-dot" style="background:#3b6ef0;">38 gest.</div><div class="cal-dot" style="background:#8b5cf6;">3 vend.</div><div class="cal-dot" style="background:#16a34a;">38 ✓</div></div><div class="cal-day hc" onclick="openDia(&#39;2026-05-15&#39;)" style="cursor:pointer;"><div class="cal-dn">15</div><div class="cal-dot" style="background:#3b6ef0;">9 gest.</div><div class="cal-dot" style="background:#8b5cf6;">2 vend.</div><div class="cal-dot" style="background:#16a34a;">9 ✓</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">16</div></div><div class="cal-day today" style="cursor:default;"><div class="cal-dn">17</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">18</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">19</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">20</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">21</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">22</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">23</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">24</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">25</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">26</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">27</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">28</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">29</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">30</div></div><div class="cal-day" style="cursor:default;"><div class="cal-dn">31</div></div></div></div></div>
+    <div class="pcontent" id="pcontent"></div>
   </div>
 </div>
 <!-- MODAL CLIENTE -->
 <div class="mov" id="mov-cl">
   <div class="modal">
-    <div class="mh"><div class="mh-l"><div class="av" id="mc-av" style="width:34px;height:34px;font-size:13px">?</div><div><div class="mh-name" id="mc-nm">—</div><div id="mc-cat" style="font-size:11px;margin-top:2px"></div></div></div><div class="mclose" onclick="closeMov(&#39;mov-cl&#39;)">✕</div></div>
+    <div class="mh"><div class="mh-l"><div class="av" id="mc-av" style="width:34px;height:34px;font-size:13px">?</div><div><div class="mh-name" id="mc-nm">—</div><div id="mc-cat" style="font-size:11px;margin-top:2px"></div></div></div><div class="mclose" onclick="closeMov('mov-cl')">&#x2715;</div></div>
     <div class="mbody" id="mc-body"></div>
-    <div class="mfoot" id="mfoot-cl"><button class="btn-s" onclick="closeMov(&#39;mov-cl&#39;)">Cerrar</button><button class="btn-p" onclick="openCallF()">📞 Registrar gestión</button></div>
+    <div class="mfoot" id="mfoot-cl"><button class="btn-s" onclick="closeMov('mov-cl')">Cerrar</button><button class="btn-p" onclick="openCallF()">&#128222; Registrar gestión</button></div>
   </div>
 </div>
 <!-- MODAL GESTIÓN -->
 <div class="mov" id="mov-call">
   <div class="modal">
-    <div class="mh"><span class="mh-name">📞 Registrar gestión</span><div class="mclose" onclick="closeMov(&#39;mov-call&#39;)">✕</div></div>
+    <div class="mh"><span class="mh-name">&#128222; Registrar gestión</span><div class="mclose" onclick="closeMov('mov-call')">&#x2715;</div></div>
     <div class="mbody">
       <div class="frow">
         <div class="fg"><label class="fl">Resultado</label>
@@ -242,42 +242,38 @@ button{cursor:pointer}
             <option value="pago">✅ Pagó</option><option value="urgente">🔴 Urgente</option><option value="pendiente">⏳ Pendiente</option>
           </select></div>
       </div>
-      <div class="fg"><label class="fl">Número alterno</label><input class="finp" id="f-num2" placeholder="Ej: 9876-5432"></div>
-      <div class="fg"><label class="fl">Producto ofrecido</label><input class="finp" id="f-prod" placeholder="Ej: Moto Honda Wave..."></div>
+      <div class="fg"><label class="fl">Número alterno</label><input class="finp" id="f-num2" placeholder="Ej: 9876-5432" /></div>
+      <div class="fg"><label class="fl">Producto ofrecido</label><input class="finp" id="f-prod" placeholder="Ej: Moto Honda Wave..." /></div>
       <div class="fg"><label class="fl">Notas</label><textarea class="ftxt" id="f-nota" placeholder="¿Qué dijo? ¿Compromisos?"></textarea></div>
     </div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-call&#39;)">Cancelar</button><button class="btn-p" onclick="saveCall()">Guardar</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-call')">Cancelar</button><button class="btn-p" onclick="saveCall()">Guardar</button></div>
   </div>
 </div>
 <!-- MODAL DÍA -->
 <div class="mov" id="mov-dia">
   <div class="modal">
-    <div class="mh"><span class="mh-name" id="mov-dia-ttl">Gestiones</span><div class="mclose" onclick="closeMov(&#39;mov-dia&#39;)">✕</div></div>
+    <div class="mh"><span class="mh-name" id="mov-dia-ttl">Gestiones</span><div class="mclose" onclick="closeMov('mov-dia')">&#x2715;</div></div>
     <div class="mbody" id="mov-dia-body"></div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-dia&#39;)">Cerrar</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-dia')">Cerrar</button></div>
   </div>
 </div>
 <!-- MODAL USUARIO -->
 <div class="mov" id="mov-usr">
   <div class="modal">
-    <div class="mh"><span class="mh-name">👤 Nuevo usuario</span><div class="mclose" onclick="closeMov(&#39;mov-usr&#39;)">✕</div></div>
+    <div class="mh"><span class="mh-name">&#128100; Nuevo usuario</span><div class="mclose" onclick="closeMov('mov-usr')">&#x2715;</div></div>
     <div class="mbody">
-      <div class="fg"><label class="fl">Nombre</label><input class="finp" id="nu-nm" placeholder="Nombre completo"></div>
+      <div class="fg"><label class="fl">Nombre</label><input class="finp" id="nu-nm" placeholder="Nombre completo" /></div>
       <div class="fg"><label class="fl">Rol</label><select class="fsel" id="nu-rol"><option value="vendedor">Vendedor</option><option value="subadmin">Gerente de tienda</option></select></div>
       <div class="fg"><label class="fl">Cartera</label><select class="fsel" id="nu-cart"></select></div>
-      <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="finp" id="nu-pin" placeholder="0000" maxlength="4" type="tel"></div>
+      <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="finp" id="nu-pin" placeholder="0000" maxlength="4" type="tel" /></div>
     </div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-usr&#39;)">Cancelar</button><button class="btn-p" onclick="saveUsr()">Crear</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-usr')">Cancelar</button><button class="btn-p" onclick="saveUsr()">Crear</button></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-var SB_URL = 'https://upaenjotkocmdvfuobii.supabase.co';
-var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYWVuam90a29jbWR2ZnVvYmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjQzMzUsImV4cCI6MjA5NDQ0MDMzNX0.am0lcEwz4-HK0VkrPBtv1QB7joNYDpOuQNhbc1HjwZ8';
-
-// Supabase se accede directamente via REST API fetch (ver sbF abajo)
-
+var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='sb_publishable_7O5xAYXC5H_OrYmTykIgyQ_hR3IkvCg';
 function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':m==='POST'?'resolution=merge-duplicates':''},...(b?{body:JSON.stringify(b)}:{})}).then(function(r){if(!r.ok)return null;return(m||'GET')==='GET'?r.json():true;}).catch(function(){return null;});}
 function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
@@ -297,8 +293,6 @@ function loadDB(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):init
 function saveDB(){try{var s=JSON.parse(JSON.stringify(DB));Object.keys(s.clients).forEach(function(cid){s.clients[cid].forEach(function(c){if(c.payments&&c.payments.length>6)c.payments=c.payments.slice(-6);});});localStorage.setItem(SK,JSON.stringify(s));}catch(e){console.warn('storage full');}}
 function initDB(){var d={users:[{id:'admin',name:'Jorge Daniel',pin:'1234',role:'admin',cartera:null},{id:'g1',name:'Gerente',pin:'0987',role:'subadmin',cartera:null},{id:'u1',name:'Vendedor Roca 1',pin:'2222',role:'vendedor',cartera:'roca1'},{id:'u2',name:'Vendedor Roca 1 Motos',pin:'3333',role:'vendedor',cartera:'roca2'},{id:'u3',name:'Vendedor Roca 2 Motos',pin:'4444',role:'vendedor',cartera:'mueble'},{id:'u4',name:'Vendedor Su Mueble',pin:'5555',role:'vendedor',cartera:'moto1'},{id:'u5',name:'Vendedor Su Moto',pin:'6666',role:'vendedor',cartera:'moto2'}],carteras:[{id:'roca1',name:'Roca 1'},{id:'roca2',name:'Roca 1 Motos'},{id:'mueble',name:'Roca 2 Motos'},{id:'moto1',name:'Su Mueble'},{id:'moto2',name:'Su Moto'}],clients:{},calls:[],activity:[],newLeads:[]};localStorage.setItem(SK,JSON.stringify(d));return d;}
 var DB=loadDB(),CU=null,CCI=null,pinBuf='',activeCat='all',activeYear='todos',activeCart=null;
-// Siempre iniciar en pantalla de login — nunca recordar sesión activa
-CU=null;
 var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 var dragClient=null,activeBoard='recompra',kbActiveCart=null,activeDash='recompra';
 var pendingFile=null,selCartId=null;
@@ -359,31 +353,8 @@ function launchApp(){
   var dest=CU.role==='admin'||CU.role==='subadmin'?'dashboard':'clientes';
   goTo(dest);
   loadFromSB().then(function(){goTo(dest);buildSB();});
-  // Auto-sync cada 30 segundos para mantener datos actualizados entre dispositivos
-  clearInterval(window._syncInterval);
-  window._syncInterval=setInterval(function(){
-    if(!CU)return;
-    loadFromSB().then(function(){
-      var cur=document.querySelector('.ni.on');
-      var curView=cur?cur.id.replace('ni-',''):'clientes';
-      if(curView==='clientes')renderCards();
-      if(curView==='dashboard')goTo('dashboard');
-      buildSB();
-    });
-  },30000);
 }
-// Sincronizar también cuando el usuario regresa a la pestaña/app
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'&&CU){
-    loadFromSB().then(function(){
-      var cur=document.querySelector('.ni.on');
-      var curView=cur?cur.id.replace('ni-',''):'clientes';
-      if(curView==='clientes')renderCards();
-      buildSB();
-    });
-  }
-});
-function doLogout(){clearInterval(window._syncInterval);CU=null;CCI=null;activeCart=null;document.getElementById('s-app').classList.remove('on');document.getElementById('s-nombre').classList.remove('on');document.getElementById('s-login').classList.add('on');initLogin();}
+function doLogout(){CU=null;CCI=null;activeCart=null;document.getElementById('s-app').classList.remove('on');document.getElementById('s-nombre').classList.remove('on');document.getElementById('s-login').classList.add('on');initLogin();}
 
 // SIDEBAR
 function buildSB(){
@@ -862,5 +833,5 @@ window.addEventListener('DOMContentLoaded',initLogin);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 
 </script>
-
-</body></html>
+</body>
+</html>
