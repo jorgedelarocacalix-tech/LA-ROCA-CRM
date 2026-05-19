@@ -229,7 +229,12 @@ button{cursor:pointer}
   <div class="main">
     <div class="topbar">
       <button class="hburg" onclick="openSB()">&#9776;</button>
-      <span class="tb-ttl" id="tb-ttl">Inicio</span>
+     <span class="tb-ttl" id="tb-ttl">Inicio</span>
+      <div style="display:inline-flex; gap:6px; align-items:center; margin-left:10px; margin-right:10px;">
+        <button onclick="paginaAnterior()" style="padding:4px 8px; font-size:12px; font-weight:bold; cursor:pointer;">⬅️ Ant</button>
+        <span id="lbl-pagina" style="font-size:12px; font-weight:600;">Pág. 1</span>
+        <button onclick="paginaSiguiente()" style="padding:4px 8px; font-size:12px; font-weight:bold; cursor:pointer;">Sig ➡️</button>
+      </div>
       <span class="tb-chip" id="tb-chip" style="display:none"></span>
     </div>
     <div class="pcontent" id="pcontent"></div>
@@ -303,7 +308,13 @@ function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombr
 function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
 function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null});}
 function loadFromSB(){
-  return Promise.all([sbF('clientes','GET',null,'?select=*&order=nombre&limit=50000'),sbF('gestiones','GET',null,'?select=*&order=created_at&limit=50000'),sbF('usuarios','GET',null,'?select=*'),sbF('leads','GET',null,'?select=*&order=created_at')])
+  var desde = (window.paginaActual || 0) * 150;
+  return Promise.all([
+    sbF('clientes','GET',null,'?select=*&order=nombre&limit=150&offset=' + desde),
+    sbF('gestiones','GET',null,'?select=*&order=created_at&limit=50000'),
+    sbF('usuarios','GET',null,'?select=*'),
+    sbF('leads','GET',null,'?select=*&order=created_at')
+  ]).then(function(res){
     var cl=res[0]||[],ge=res[1]||[],us=res[2]||[],ld=res[3]||[];
     DB.clients={};
     cl.forEach(function(c){if(!DB.clients[c.cartera_id])DB.clients[c.cartera_id]=[];DB.clients[c.cartera_id].push({id:c.id,nombre:c.nombre,telefono:c.telefono||'',estado:c.estado||'pendiente',kbCol:c.kb_col||null,kbComments:c.kb_comments||[],totalPagos:c.total_pagos||0,montoTotal:parseFloat(c.monto_total)||0,ultimoPago:c.ultimo_pago||'',primerPago:c.primer_pago||'',antiguedad:parseFloat(c.antiguedad)||0,patron:c.patron||'Mensual',payments:c.payments||[]});});
@@ -312,6 +323,31 @@ function loadFromSB(){
     if(ld.length){DB.newLeads=ld.map(function(l){return{id:l.id,nombre:l.nombre,telefono:l.telefono||'',fechaContacto:l.fecha_contacto||'',fuente:l.fuente||'',producto:l.producto||'',notas:l.notas||'',leadCol:l.lead_col||'nl',kbComments:l.kb_comments||[],createdBy:l.created_by||'',createdAt:l.created_at||''};});}
     saveDB();
   }).catch(function(e){console.error('SB:',e);});}
+  window.paginaActual = 0;
+
+function paginaSiguiente() {
+  window.paginaActual++;
+  var pLabel = document.getElementById('lbl-pagina');
+  if(pLabel) pLabel.innerText = 'Pág. ' + (window.paginaActual + 1);
+  loadFromSB().then(function() {
+    if(window.uiRenderView) window.uiRenderView();
+    else if(typeof render === 'function') render();
+    else if(typeof initApp === 'function') initApp();
+  });
+}
+
+function paginaAnterior() {
+  if (window.paginaActual > 0) {
+    window.paginaActual--;
+    var pLabel = document.getElementById('lbl-pagina');
+    if(pLabel) pLabel.innerText = 'Pág. ' + (window.paginaActual + 1);
+    loadFromSB().then(function() {
+      if(window.uiRenderView) window.uiRenderView();
+      else if(typeof render === 'function') render();
+      else if(typeof initApp === 'function') initApp();
+    });
+  }
+}
 
 var SK='lroca_v19';
 function loadDB(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initDB();}catch(e){return initDB();}}
