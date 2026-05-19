@@ -303,7 +303,7 @@ function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombr
 function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
 function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null});}
 function loadFromSB(){
-  return Promise.all([sbF('clientes','GET',null,'?select=*&order=nombre'),sbF('gestiones','GET',null,'?select=*&order=created_at'),sbF('usuarios','GET',null,'?select=*'),sbF('leads','GET',null,'?select=*&order=created_at')]).then(function(res){
+  return Promise.all([sbF('clientes','GET',null,'?select=*&order=nombre&limit=50000'),sbF('gestiones','GET',null,'?select=*&order=created_at&limit=50000'),sbF('usuarios','GET',null,'?select=*'),sbF('leads','GET',null,'?select=*&order=created_at')])
     var cl=res[0]||[],ge=res[1]||[],us=res[2]||[],ld=res[3]||[];
     DB.clients={};
     cl.forEach(function(c){if(!DB.clients[c.cartera_id])DB.clients[c.cartera_id]=[];DB.clients[c.cartera_id].push({id:c.id,nombre:c.nombre,telefono:c.telefono||'',estado:c.estado||'pendiente',kbCol:c.kb_col||null,kbComments:c.kb_comments||[],totalPagos:c.total_pagos||0,montoTotal:parseFloat(c.monto_total)||0,ultimoPago:c.ultimo_pago||'',primerPago:c.primer_pago||'',antiguedad:parseFloat(c.antiguedad)||0,patron:c.patron||'Mensual',payments:c.payments||[]});});
