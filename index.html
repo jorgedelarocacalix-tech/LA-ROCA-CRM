@@ -229,12 +229,7 @@ button{cursor:pointer}
   <div class="main">
     <div class="topbar">
       <button class="hburg" onclick="openSB()">&#9776;</button>
-     <span class="tb-ttl" id="tb-ttl">Inicio</span>
-      <div style="display:inline-flex; gap:6px; align-items:center; margin-left:10px; margin-right:10px;">
-        <button onclick="paginaAnterior()" style="padding:4px 8px; font-size:12px; font-weight:bold; cursor:pointer;">⬅️ Ant</button>
-        <span id="lbl-pagina" style="font-size:12px; font-weight:600;">Pág. 1</span>
-        <button onclick="paginaSiguiente()" style="padding:4px 8px; font-size:12px; font-weight:bold; cursor:pointer;">Sig ➡️</button>
-      </div>
+      <span class="tb-ttl" id="tb-ttl">Inicio</span>
       <span class="tb-chip" id="tb-chip" style="display:none"></span>
     </div>
     <div class="pcontent" id="pcontent"></div>
@@ -305,15 +300,27 @@ function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET'
 function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
 function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',payments:c.payments||[]});}
-function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
+function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,cartera_vend:call.carteraVend||null,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
 function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null});}
 function loadFromSB(){
-  var desde = (window.paginaActual || 0) * 550;
+  // Fetch all pages from Supabase (max 1000 per page)
+  function fetchAll(table,query){
+    var all=[];
+    function fetchPage(offset){
+      return sbF(table,'GET',null,query+'&limit=1000&offset='+offset).then(function(rows){
+        if(!rows||!rows.length)return all;
+        all=all.concat(rows);
+        if(rows.length<1000)return all;
+        return fetchPage(offset+1000);
+      });
+    }
+    return fetchPage(0);
+  }
   return Promise.all([
-    sbF('clientes','GET',null,'?select=*&order=nombre&limit=150&offset=' + desde),
-    sbF('gestiones','GET',null,'?select=*&order=created_at&limit=50000'),
+    fetchAll('clientes','?select=*&order=nombre'),
+    fetchAll('gestiones','?select=*&order=created_at'),
     sbF('usuarios','GET',null,'?select=*'),
-    sbF('leads','GET',null,'?select=*&order=created_at')
+    fetchAll('leads','?select=*&order=created_at')
   ]).then(function(res){
     var cl=res[0]||[],ge=res[1]||[],us=res[2]||[],ld=res[3]||[];
     DB.clients={};
@@ -323,31 +330,6 @@ function loadFromSB(){
     if(ld.length){DB.newLeads=ld.map(function(l){return{id:l.id,nombre:l.nombre,telefono:l.telefono||'',fechaContacto:l.fecha_contacto||'',fuente:l.fuente||'',producto:l.producto||'',notas:l.notas||'',leadCol:l.lead_col||'nl',kbComments:l.kb_comments||[],createdBy:l.created_by||'',createdAt:l.created_at||''};});}
     saveDB();
   }).catch(function(e){console.error('SB:',e);});}
-  window.paginaActual = 0;
-
-function paginaSiguiente() {
-  window.paginaActual++;
-  var pLabel = document.getElementById('lbl-pagina');
-  if(pLabel) pLabel.innerText = 'Pág. ' + (window.paginaActual + 1);
-  loadFromSB().then(function() {
-    if(window.uiRenderView) window.uiRenderView();
-    else if(typeof render === 'function') render();
-    else if(typeof initApp === 'function') initApp();
-  });
-}
-
-function paginaAnterior() {
-  if (window.paginaActual > 0) {
-    window.paginaActual--;
-    var pLabel = document.getElementById('lbl-pagina');
-    if(pLabel) pLabel.innerText = 'Pág. ' + (window.paginaActual + 1);
-    loadFromSB().then(function() {
-      if(window.uiRenderView) window.uiRenderView();
-      else if(typeof render === 'function') render();
-      else if(typeof initApp === 'function') initApp();
-    });
-  }
-}
 
 var SK='lroca_v19';
 function loadDB(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initDB();}catch(e){return initDB();}}
@@ -359,7 +341,7 @@ var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 var dragClient=null,activeBoard='recompra',kbActiveCart=null,kbSelVend=null;
 var activeDash='todos',dashCart=null,dashSelVend=null;
 var segCart=null,segSelVend=null;
-var pendingFile=null,selCartId=null;
+var pendingFile=null,selCartId=null,clientPage=0,clientsPerPage=100;
 if(!DB.newLeads)DB.newLeads=[];
 
 var KB={
@@ -489,7 +471,11 @@ function goTo(view){
 function fmt(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(0)+'K';return n.toLocaleString('es-HN',{maximumFractionDigits:0});}
 function gcd(call){if(call.dateISO){var d=new Date(call.dateISO);if(!isNaN(d))return d;}if(call.date){var pts=call.date.split('/');if(pts.length===3){var d2=new Date(pts[2],parseInt(pts[1])-1,parseInt(pts[0]));if(!isNaN(d2))return d2;}}return null;}
 function estBadge(e){var m={urgente:'🔴 Urgente',llamado:'📞 Llamado',interesado:'⭐ Interesado',seguimiento:'🔄 Seguimiento',visita:'🤝 Visita',pago:'✅ Pagó',pendiente:'⏳ Pendiente'};var co={urgente:'var(--red)',llamado:'var(--blue)',interesado:'var(--amber)',seguimiento:'var(--teal)',visita:'var(--purple)',pago:'var(--green)',pendiente:'var(--t2)'};return '<span style="font-size:11px;font-weight:600;color:'+(co[e]||'var(--t2)')+';">'+(m[e]||e)+'</span>';}
-function getPool(){if(CU.role==='vendedor')return(DB.clients[CU.cartera]||[]).map(function(c){return Object.assign({},c,{_cid:CU.cartera});});var cids=activeCart?[activeCart]:DB.carteras.map(function(x){return x.id;});return cids.flatMap(function(cid){var cn=(DB.carteras.find(function(x){return x.id===cid;})||{name:''}).name;return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid,_cn:cn});});});}
+function getPool(){
+  if(CU.role==='vendedor'){
+    // Vendedor always sees ALL clients in their cartera
+    return(DB.clients[CU.cartera]||[]).map(function(c){return Object.assign({},c,{_cid:CU.cartera});});
+  }var cids=activeCart?[activeCart]:DB.carteras.map(function(x){return x.id;});return cids.flatMap(function(cid){var cn=(DB.carteras.find(function(x){return x.id===cid;})||{name:''}).name;return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid,_cn:cn});});});}
 function buildCartPills(cur,fn,pid){var h='<div class="filter-row" id="'+(pid||'cp-'+fn)+'"><div class="ytab '+(cur===null?'on':'')+'" onclick="'+fn+'(null,this)">Todas</div>';DB.carteras.forEach(function(c){h+='<div class="ytab '+(cur===c.id?'on':'')+'" data-cid="'+c.id+'" onclick="'+fn+'(this.dataset.cid,this)">'+c.name+'</div>';});return h+'</div>';}
 function buildVendPills(cur,fn,pid,cid){var calls=cid?DB.calls.filter(function(c){return c.carteraId===cid;}):DB.calls;var vends=new Set();calls.forEach(function(c){vends.add(c.userName||c.userId);});if(!vends.size)return '';var h='<div class="filter-row" id="'+(pid||'vp-'+fn)+'"><div class="ytab '+(cur===null?'on':'')+'" onclick="'+fn+'(null,this)">👥 Todos</div>';Array.from(vends).sort().forEach(function(v){h+='<div class="ytab '+(cur===v?'on':'')+'" data-vend="'+v+'" onclick="'+fn+'(this.dataset.vend,this)">👤 '+v+'</div>';});return h+'</div>';}
 function openMov(id){document.getElementById(id).classList.add('open');}
@@ -503,7 +489,7 @@ function vClientes(){
   var pool=getPool();var yrs={todos:1};pool.forEach(function(c){(c.payments||[]).forEach(function(p){if(p.fecha){var pt=p.fecha.split('/');if(pt.length===3)yrs[pt[2]]=1;}});});
   var sy=Object.keys(yrs).sort(function(a,b){return a==='todos'?-1:b==='todos'?1:b-a;});
   var yH='<div class="filter-row">'+sy.map(function(y){return '<div class="ytab '+(activeYear===y?'on':'')+'" data-yr="'+y+'" onclick="setYear(this)">'+(y==='todos'?'📅 Todos':y)+'</div>';}).join('')+'</div>';
-  return cartH+yH+'<div class="filter-row"><button class="cfilter all '+(activeCat==='all'?'on':'')+'" data-cat="all" onclick="setCat(this)">Todos</button><button class="cfilter ex '+(activeCat==='ex'?'on':'')+'" data-cat="ex" onclick="setCat(this)">⭐ Excelente</button><button class="cfilter bu '+(activeCat==='bu'?'on':'')+'" data-cat="bu" onclick="setCat(this)">👍 Bueno</button><button class="cfilter re '+(activeCat==='re'?'on':'')+'" data-cat="re" onclick="setCat(this)">⚠️ Regular</button><button class="cfilter ri '+(activeCat==='ri'?'on':'')+'" data-cat="ri" onclick="setCat(this)">🔴 Riesgoso</button><input class="srch" id="srch" placeholder="🔍 Buscar cliente..." oninput="renderCards()" /><span class="res-ct" id="res-ct"></span></div><div class="cards-grid" id="cards-grid"></div>';
+  return cartH+yH+'<div class="filter-row"><button class="cfilter all '+(activeCat==='all'?'on':'')+'" data-cat="all" onclick="setCat(this)">Todos</button><button class="cfilter ex '+(activeCat==='ex'?'on':'')+'" data-cat="ex" onclick="setCat(this)">⭐ Excelente</button><button class="cfilter bu '+(activeCat==='bu'?'on':'')+'" data-cat="bu" onclick="setCat(this)">👍 Bueno</button><button class="cfilter re '+(activeCat==='re'?'on':'')+'" data-cat="re" onclick="setCat(this)">⚠️ Regular</button><button class="cfilter ri '+(activeCat==='ri'?'on':'')+'" data-cat="ri" onclick="setCat(this)">🔴 Riesgoso</button><input class="srch" id="srch" placeholder="🔍 Buscar cliente..." oninput="renderCards()" /><span class="res-ct" id="res-ct"></span></div><div class="cards-grid" id="cards-grid"></div><div id=\"pagination\"></div>';
 }
 function renderCards(){
   var grid=document.getElementById('cards-grid');if(!grid)return;
@@ -519,9 +505,16 @@ function renderCards(){
   var msg=CU.role==='vendedor'?
     '<div class="empty-st"><div class="ei">👥</div><p style="font-size:15px;font-weight:600;color:#2d3748;margin-bottom:8px;">Sin clientes en tu cartera</p><p style="font-size:13px;color:#718096;">El administrador debe subir el Excel con los clientes de tu cartera.</p></div>':
     '<div class="empty-st"><div class="ei">🔍</div><p>Sin clientes con este filtro.</p></div>';
-  grid.innerHTML=msg;return;}
+  grid.innerHTML=msg;
+  document.getElementById('pagination')&&(document.getElementById('pagination').innerHTML='');
+  return;}
+  // Pagination
+  var totalPages=Math.ceil(cs.length/clientsPerPage);
+  if(clientPage>=totalPages)clientPage=0;
+  var start=clientPage*clientsPerPage;
+  var pageCs=cs.slice(start,start+clientsPerPage);
   var h='';
-  cs.forEach(function(c){
+  pageCs.forEach(function(c){
     var tel=c.telefono?'<a href="tel:'+c.telefono+'" onclick="event.stopPropagation()" style="color:#276749;font-size:11px;font-weight:600;">📞 '+c.telefono+'</a>':'<span style="font-size:11px;color:var(--t3);">Sin teléfono</span>';
     var cn=CU.role!=='vendedor'&&!activeCart&&c._cn?' · <span style="font-size:10px;color:var(--t3);">'+c._cn+'</span>':'';
     var callBtn=c.telefono?'<a href="tel:'+c.telefono+'" onclick="event.stopPropagation()" class="btn-call">📲 Llamar</a>':'<button class="btn-call" data-cid="'+c._cid+'" data-id="'+c.id+'" onclick="event.stopPropagation();openCl(this.dataset.cid,this.dataset.id)">+ Agregar tel.</button>';
@@ -533,10 +526,26 @@ function renderCards(){
     h+='<div class="cc-foot">'+callBtn+'<button class="btn-sm" data-cid="'+c._cid+'" data-id="'+c.id+'" onclick="event.stopPropagation();openCl(this.dataset.cid,this.dataset.id)">Ver detalles →</button></div></div>';
   });
   grid.innerHTML=h;
+  // Render pagination
+  var pgEl=document.getElementById('pagination');
+  if(pgEl){
+    if(totalPages<=1){pgEl.innerHTML='';return;}
+    var ph='<div style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap;">';
+    ph+='<span style="font-size:12px;color:var(--t2);margin-right:4px;">Página '+(clientPage+1)+' de '+totalPages+' ('+cs.length+' clientes)</span>';
+    if(clientPage>0)ph+='<button onclick="goPage(0)" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;background:var(--card);cursor:pointer;">« Primera</button>';
+    if(clientPage>0)ph+='<button onclick="goPage('+(clientPage-1)+')" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;background:var(--card);cursor:pointer;">‹ Anterior</button>';
+    var startP=Math.max(0,clientPage-4);var endP=Math.min(totalPages-1,startP+9);
+    for(var p=startP;p<=endP;p++){var active=p===clientPage;ph+='<button onclick="goPage('+p+')" style="padding:6px 12px;border:1.5px solid '+(active?'var(--blue)':'var(--border)')+';border-radius:var(--r);font-size:12px;background:'+(active?'var(--bluel)':'var(--card)')+';color:'+(active?'var(--blue)':'var(--t1)')+';font-weight:'+(active?'700':'400')+';cursor:pointer;">'+(p+1)+'</button>';}
+    if(clientPage<totalPages-1)ph+='<button onclick="goPage('+(clientPage+1)+')" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;background:var(--card);cursor:pointer;">Siguiente ›</button>';
+    if(clientPage<totalPages-1)ph+='<button onclick="goPage('+(totalPages-1)+')" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;background:var(--card);cursor:pointer;">Última »</button>';
+    ph+='</div>';
+    pgEl.innerHTML=ph;
+  }
 }
-function setCart(id,el){activeCart=id;goTo('clientes');}
-function setYear(el){activeYear=el.dataset.yr;document.querySelectorAll('.filter-row .ytab[data-yr]').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderCards();}
-function setCat(el){var cat=el.dataset.cat;activeCat=cat;document.querySelectorAll('.cfilter').forEach(function(b){b.classList.remove('on');});el.classList.add('on');renderCards();}
+function goPage(p){clientPage=p;renderCards();window.scrollTo(0,0);}
+function setCart(id,el){activeCart=id;clientPage=0;goTo('clientes');}
+function setYear(el){activeYear=el.dataset.yr;clientPage=0;document.querySelectorAll('.filter-row .ytab[data-yr]').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderCards();}
+function setCat(el){var cat=el.dataset.cat;activeCat=cat;clientPage=0;document.querySelectorAll('.cfilter').forEach(function(b){b.classList.remove('on');});el.classList.add('on');renderCards();}
 
 function openCl(cid,clientId){
   var cs=DB.clients[cid]||[];var c=cs.find(function(x){return x.id===clientId;});if(!c)return;
@@ -581,7 +590,7 @@ function saveCall(){
   var cid=CCI.carteraId,clientId=CCI.clientId;
   var res=document.getElementById('f-res').value,est=document.getElementById('f-est').value,prod=document.getElementById('f-prod').value,nota=document.getElementById('f-nota').value,num2=document.getElementById('f-num2').value;
   var now=new Date();var dateStr=now.toLocaleDateString('es-HN',{day:'2-digit',month:'2-digit',year:'numeric'});var dateISO=now.toISOString().slice(0,10);
-  var call={id:Date.now()+'',clientId:clientId,carteraId:cid,userId:CU.id,userName:CU.name,date:dateStr,dateISO:dateISO,resultado:res,estado:est,producto:prod,notas:nota,num2:num2};
+  var call={id:Date.now()+'',clientId:clientId,carteraId:cid,userId:CU.id,userName:CU.name,carteraVend:CU.cartera||null,date:dateStr,dateISO:dateISO,resultado:res,estado:est,producto:prod,notas:nota,num2:num2};
   DB.calls.push(call);if(DB.calls.length>1000)DB.calls.splice(0,DB.calls.length-1000);
   var c=(DB.clients[cid]||[]).find(function(x){return x.id===clientId;});if(c)c.estado=est;
   saveDB();saveCalltoSB(call);if(c)saveCtoSB(c,cid);
