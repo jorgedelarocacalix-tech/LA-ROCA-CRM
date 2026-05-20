@@ -779,14 +779,20 @@ function renderKanban(){
   } else {
     cids=kbActiveCart?[kbActiveCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
     var kbVendNorm=kbSelVend?(kbSelVend.trim().toLowerCase()):null;
-    var callsF=DB.calls.filter(function(c){
-      if(!cids.includes(c.carteraId))return false;
-      if(!kbVendNorm)return true;
-      var cn=(c.userName||c.userId||'').trim().toLowerCase();
-      return cn===kbVendNorm;
+    // Mostrar TODOS los clientes de la(s) cartera(s) sin filtrar por gestiones
+    pool=cids.flatMap(function(cid){
+      return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid});});
     });
-    var managed=new Set(callsF.map(function(c){return c.clientId;}));
-    pool=cids.flatMap(function(cid){return(DB.clients[cid]||[]).filter(function(c){return managed.has(c.id)||(c.kbCol&&c.kbCol!=='prospecto');}).map(function(c){return Object.assign({},c,{_cid:cid});});});
+    // Si hay vendedor seleccionado, filtrar: clientes con gestión de ese vendedor
+    // O clientes que tienen kbCol asignado (movidos en el tablero)
+    if(kbVendNorm){
+      var managedByVend=new Set(DB.calls.filter(function(c){
+        return cids.includes(c.carteraId)&&(c.userName||c.userId||'').trim().toLowerCase()===kbVendNorm;
+      }).map(function(c){return c.clientId;}));
+      pool=pool.filter(function(c){
+        return managedByVend.has(c.id)||(c.kbCol&&c.kbCol!=='prospecto'&&(c.kbVendedor||'').trim().toLowerCase()===kbVendNorm);
+      });
+    }
     colField='kbCol';defCol='prospecto';
   }
   var colMap={};board.cols.forEach(function(col){colMap[col.id]=[];});
@@ -1110,7 +1116,7 @@ function vEquipo(){
   DB.carteras.forEach(function(c){var cc=(DB.clients[c.id]||[]).length;h+='<div class="cart-item"><div><span style="font-weight:700;font-size:14px;">'+c.name+'</span><span style="font-size:12px;color:var(--t2);margin-left:10px;">'+cc+' clientes cargados · ID: '+c.id+'</span></div><button class="btn-danger" style="font-size:12px;padding:6px 12px;" data-cid="'+c.id+'" data-cname="'+c.name+'" onclick="delCart(this)">🗑 Borrar</button></div>';});
   h+='</div>';
   h+='<div class="chart-card"><div class="chart-ttl">👥 Usuarios y accesos</div><div style="overflow-x:auto;"><table class="utbl"><thead><tr><th>Nombre</th><th>Rol</th><th>Cartera asignada</th><th>PIN</th><th>Gestiones</th><th></th></tr></thead><tbody>';
-  sellers.forEach(function(u){var cart=DB.carteras.find(function(c){return c.id===u.cartera;});var rolCfg={admin:{lbl:'Admin',bg:'var(--bluel)',c:'var(--blue2)'},subadmin:{lbl:'Gerente',bg:'var(--amberl)',c:'#c05621'},vendedor:{lbl:'Vendedor',bg:'var(--greenl)',c:'#276749'}};var rc=rolCfg[u.role]||{lbl:u.role,bg:'#edf2f7',c:'var(--t2)'};h+='<tr><td><strong style="font-size:14px;">'+u.name+'</strong></td><td><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+rc.bg+';color:'+rc.c+';">'+rc.lbl+'</span></td><td style="color:var(--t2);font-size:13px;">'+(Array.isArray(u.cartera)&&u.cartera.length?u.cartera.map(function(id){var c=DB.carteras.find(function(x){return x.id===id;});return c?c.name:id;}).join(', '):(u.cartera?u.cartera:'Todas'))+'</td><td><span style="font-family:monospace;font-size:16px;font-weight:700;color:var(--amber);letter-spacing:3px;">'+u.pin+'</span></td><td style="color:var(--t2);">'+DB.calls.filter(function(c){return c.userId===u.id;}).length+'</td><td><button class="btn-sm" style="font-size:11px;padding:5px 10px;" data-uid="'+u.id+'" onclick="delUsr(this.dataset.uid)">Eliminar</button></td></tr>';});
+  sellers.forEach(function(u){var cart=DB.carteras.find(function(c){return c.id===u.cartera;});var rolCfg={admin:{lbl:'Admin',bg:'var(--bluel)',c:'var(--blue2)'},subadmin:{lbl:'Gerente',bg:'var(--amberl)',c:'#c05621'},vendedor:{lbl:'Vendedor',bg:'var(--greenl)',c:'#276749'}};var rc=rolCfg[u.role]||{lbl:u.role,bg:'#edf2f7',c:'var(--t2)'};h+='<tr><td><strong style="font-size:14px;">'+u.name+'</strong></td><td><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+rc.bg+';color:'+rc.c+';">'+rc.lbl+'</span></td><td style="color:var(--t2);font-size:13px;">'+(Array.isArray(u.cartera)&&u.cartera.length?u.cartera.map(function(id){var c=DB.carteras.find(function(x){return x.id===id;});return c?c.name:id;}).join(', '):(u.cartera?u.cartera:'Todas'))+'</td><td><span style="font-family:monospace;font-size:16px;font-weight:700;color:var(--amber);letter-spacing:3px;">'+u.pin+'</span></td><td style="color:var(--t2);">'+DB.calls.filter(function(c){return c.userId===u.id||(c.userName&&u.name&&c.userName.trim().toLowerCase()===u.name.trim().toLowerCase());}).length+'</td><td><button class="btn-sm" style="font-size:11px;padding:5px 10px;" data-uid="'+u.id+'" onclick="delUsr(this.dataset.uid)">Eliminar</button></td></tr>';});
   h+='</tbody></table></div></div></div>';return h;
 }
 function delCart(btn){var cid=btn.dataset.cid,cname=btn.dataset.cname;var cc=(DB.clients[cid]||[]).length;if(!confirm('¿Borrar la cartera "'+cname+'"?'+(cc>0?'\n\nTiene '+cc+' clientes. Se borrarán todos sus datos.':'')))return;delete DB.clients[cid];DB.carteras=DB.carteras.filter(function(c){return c.id!==cid;});DB.calls=DB.calls.filter(function(c){return c.carteraId!==cid;});DB.users.forEach(function(u){if(u.cartera===cid)u.cartera=null;});saveDB();sbDel('clientes','?cartera_id=eq.'+cid);sbDel('gestiones','?cartera_id=eq.'+cid);goTo('equipo');toast('Cartera "'+cname+'" eliminada','ok');}
@@ -1132,7 +1138,7 @@ function saveUsr(){var name=document.getElementById('nu-nm').value.trim(),rol=do
   if(cart.length===0)cart=[];if(!name||!pin){toast('Completa nombre y PIN','err');return;}if(!/^\d{4}$/.test(pin)){toast('El PIN debe ser exactamente 4 dígitos','err');return;}if(DB.users.find(function(u){return u.pin===pin;})){toast('Ese PIN ya está en uso — elige otro','err');return;}if(DB.users.find(function(u){return u.name.toLowerCase()===name.toLowerCase()&&u.role===rol;})){if(!confirm('Ya existe un usuario llamado "'+name+'" con el mismo rol. ¿Crear de todas formas?'))return;}var newU={id:'u'+Date.now(),name:name,pin:pin,role:rol,cartera:cart};DB.users.push(newU);var sbU=Object.assign({},newU,{cartera:JSON.stringify(newU.cartera)});saveDB();sbUp('usuarios',sbU);closeMov('mov-usr');goTo('equipo');toast('Usuario creado — PIN: '+pin,'ok');}
 function delUsr(uid){
   var u=DB.users.find(function(x){return x.id===uid;});
-  var calls=DB.calls.filter(function(c){return c.userId===uid;}).length;
+  var calls=DB.calls.filter(function(c){return c.userId===uid||(c.userName&&u&&c.userName.trim().toLowerCase()===u.name.trim().toLowerCase());}).length;
   var msg=u?'¿Eliminar a "'+u.name+'"?'+(calls>0?' Tiene '+calls+' gestiones registradas.':''):'¿Eliminar?';
   if(!confirm(msg))return;
   DB.users=DB.users.filter(function(u){return u.id!==uid;});
@@ -1159,10 +1165,13 @@ setInterval(function(){
   loadFromSB().then(function(){
     var ttl=document.getElementById('tb-ttl');if(!ttl)return;
     var view=ttl.textContent.toLowerCase();
-    var map={dashboard:'dashboard',clientes:'clientes',kanban:'kanban',seguimiento:'seguimiento'};
-    var cur=map[view];if(cur)goTo(cur);
+    // Refrescar sin resetear filtros activos (goTo resetea estado)
+    if(view.includes('kanban')){renderKanban();}
+    else if(view.includes('dashboard')){renderDashCharts();}
+    else if(view.includes('seguimiento')){renderSeg();renderSegCharts();renderCal();}
+    else if(view.includes('clientes')){renderCards();}
   });
-},10000);
+},15000);
 
 window.addEventListener('DOMContentLoaded',initLogin);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
