@@ -327,59 +327,69 @@ function loadFromSB(){
     cl.forEach(function(c){if(!DB.clients[c.cartera_id])DB.clients[c.cartera_id]=[];DB.clients[c.cartera_id].push({id:c.id,nombre:c.nombre,telefono:c.telefono||'',estado:c.estado||'pendiente',kbCol:c.kb_col||null,kbComments:c.kb_comments||[],totalPagos:c.total_pagos||0,montoTotal:parseFloat(c.monto_total)||0,ultimoPago:c.ultimo_pago||'',primerPago:c.primer_pago||'',antiguedad:parseFloat(c.antiguedad)||0,patron:c.patron||'Mensual',payments:c.payments||[]});});
     DB.calls=ge.map(function(g){return{id:g.id,clientId:g.client_id,carteraId:g.cartera_id,userId:g.user_id,userName:g.user_name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};});
     if(us.length){
-      // Usuarios hardcoded (fuente de verdad para carteras y roles)
       var hardcoded=initDB_users();
-      DB.users=hardcoded.map(function(hd){
-        // Buscar en SB por nombre (normalizado) o por pin
-        var sb=us.find(function(u){
-          return (u.name&&u.name.trim().toLowerCase()===hd.name.trim().toLowerCase())||u.pin===hd.pin;
-        });
-        // Si existe en SB, conservar su id de SB para que las gestiones coincidan
-        // pero usar cartera y role del hardcoded (fuente de verdad)
+      var hardcodedPins=hardcoded.map(function(h){return h.pin;});
+      var hardcodedNames=hardcoded.map(function(h){return h.name.trim().toLowerCase();});
+      var merged=hardcoded.map(function(hd){
+        var sb=us.find(function(u){return (u.name&&u.name.trim().toLowerCase()===hd.name.trim().toLowerCase())||u.pin===hd.pin;});
         if(sb){return{id:sb.id,name:hd.name,pin:hd.pin,role:hd.role,cartera:hd.cartera};}
         return hd;
       });
+      // Incluir usuarios nuevos creados desde la UI (no hardcodeados)
+      us.forEach(function(su){
+        var isHard=hardcodedPins.indexOf(su.pin)>-1||hardcodedNames.indexOf((su.name||'').trim().toLowerCase())>-1;
+        if(!isHard){
+          var cart=su.cartera;try{if(typeof cart==='string')cart=JSON.parse(cart);}catch(e){cart=cart?[cart]:[];}
+          if(!Array.isArray(cart))cart=cart?[cart]:[];
+          merged.push({id:su.id,name:su.name,pin:su.pin,role:su.role||'vendedor',cartera:cart});
+        }
+      });
+      DB.users=merged;
     }
     if(ld.length){DB.newLeads=ld.map(function(l){return{id:l.id,nombre:l.nombre,telefono:l.telefono||'',fechaContacto:l.fecha_contacto||'',fuente:l.fuente||'',producto:l.producto||'',notas:l.notas||'',leadCol:l.lead_col||'nl',kbComments:l.kb_comments||[],createdBy:l.created_by||'',createdAt:l.created_at||''};});}
     saveDB();
   }).catch(function(e){console.error('SB:',e);});}
 
-var SK='lroca_v19';
-function loadDB(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initDB();}catch(e){return initDB();}}
-function saveDB(){try{var s=JSON.parse(JSON.stringify(DB));Object.keys(s.clients).forEach(function(cid){s.clients[cid].forEach(function(c){if(c.payments&&c.payments.length>6)c.payments=c.payments.slice(-6);});});localStorage.setItem(SK,JSON.stringify(s));}catch(e){console.warn('storage full');}}
+var SK='lroca_v20';
+// Limpiar versiones antiguas del localStorage para liberar espacio
+(function(){var old=['lroca_v19','lroca_v18','lroca_v17','lroca_v16','lroca_v15'];old.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});})();
+function loadDB(){try{var d=localStorage.getItem(SK);if(!d)return initDB();var base=initDB();var p=JSON.parse(d);base.users=p.users||base.users;base.calls=p.calls||base.calls;base.activity=p.activity||base.activity;return base;}catch(e){return initDB();}}
+function saveDB(){try{// No guardar clientes — vienen de Supabase y llenan el storage
+var s={users:DB.users,calls:DB.calls.slice(-300),activity:(DB.activity||[]).slice(-50),newLeads:[]};localStorage.setItem(SK,JSON.stringify(s));}catch(e){console.warn('storage full: '+e.message);// Intentar guardar solo lo esencial
+try{localStorage.setItem(SK,JSON.stringify({users:DB.users,calls:[],activity:[]}));}catch(e2){}}}
 function initDB_users(){return[
   {id:'admin',  name:'Jorge Daniel',pin:'1234',role:'admin',   cartera:[]},
   {id:'g1',     name:'ANA',         pin:'9999',role:'subadmin',cartera:[]},
-  {id:'v_ale',  name:'Alejandra',   pin:'1111',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_fer',  name:'fer',         pin:'2323',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_joh',  name:'johana',      pin:'1212',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_mil',  name:'Milagro',     pin:'2222',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_den',  name:'Denys',       pin:'4141',role:'vendedor',cartera:['rocam2']},
-  {id:'v_gab',  name:'Gabriela',    pin:'4242',role:'vendedor',cartera:['rocam2']},
-  {id:'v_say',  name:'Sayda',       pin:'5151',role:'vendedor',cartera:['sumoto','sumueble']},
-  {id:'v_all',  name:'Allison',     pin:'5252',role:'vendedor',cartera:['sumoto','sumueble']},
-  {id:'v_kar',  name:'Karla',       pin:'5353',role:'vendedor',cartera:['sumoto','sumueble']},
-  {id:'v_jor',  name:'Jorge',       pin:'5454',role:'vendedor',cartera:['sumoto','sumueble']}
+  {id:'v_ale',  name:'Alejandra',   pin:'1111',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_fer',  name:'fer',         pin:'2323',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_joh',  name:'johana',      pin:'1212',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_mil',  name:'Milagro',     pin:'2222',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_den',  name:'Denys',       pin:'4141',role:'vendedor',cartera:['roca2motors']},
+  {id:'v_gab',  name:'Gabriela',    pin:'4242',role:'vendedor',cartera:['roca2motors']},
+  {id:'v_say',  name:'Sayda',       pin:'5151',role:'vendedor',cartera:['sumotodanli','sumuebledanli']},
+  {id:'v_all',  name:'Allison',     pin:'5252',role:'vendedor',cartera:['sumotodanli','sumuebledanli']},
+  {id:'v_kar',  name:'Karla',       pin:'5353',role:'vendedor',cartera:['sumotodanli','sumuebledanli']},
+  {id:'v_jor',  name:'Jorge',       pin:'5454',role:'vendedor',cartera:['sumotodanli','sumuebledanli']}
 ];}
 function initDB(){var d={users:[
   {id:'admin',  name:'Jorge Daniel',pin:'1234',role:'admin',   cartera:[]},
   {id:'g1',     name:'ANA',         pin:'9999',role:'subadmin',cartera:[]},
-  {id:'v_ale',  name:'Alejandra',   pin:'1111',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_fer',  name:'fer',         pin:'2323',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_joh',  name:'johana',      pin:'1212',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_mil',  name:'Milagro',     pin:'2222',role:'vendedor',cartera:['roca1','rocam1','rocam2']},
-  {id:'v_den',  name:'Denys',       pin:'4141',role:'vendedor',cartera:['rocam2']},
-  {id:'v_gab',  name:'Gabriela',    pin:'4242',role:'vendedor',cartera:['rocam2']},
-  {id:'v_say',  name:'Sayda',       pin:'5151',role:'vendedor',cartera:['sumoto','sumueble']},
-  {id:'v_all',  name:'Allison',     pin:'5252',role:'vendedor',cartera:['sumoto','sumueble']},
-  {id:'v_kar',  name:'Karla',       pin:'5353',role:'vendedor',cartera:['sumoto','sumueble']},
-  {id:'v_jor',  name:'Jorge',       pin:'5454',role:'vendedor',cartera:['sumoto','sumueble']}
+  {id:'v_ale',  name:'Alejandra',   pin:'1111',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_fer',  name:'fer',         pin:'2323',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_joh',  name:'johana',      pin:'1212',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_mil',  name:'Milagro',     pin:'2222',role:'vendedor',cartera:['roca1','roca1motors','roca2motors']},
+  {id:'v_den',  name:'Denys',       pin:'4141',role:'vendedor',cartera:['roca2motors']},
+  {id:'v_gab',  name:'Gabriela',    pin:'4242',role:'vendedor',cartera:['roca2motors']},
+  {id:'v_say',  name:'Sayda',       pin:'5151',role:'vendedor',cartera:['sumotodanli','sumuebledanli']},
+  {id:'v_all',  name:'Allison',     pin:'5252',role:'vendedor',cartera:['sumotodanli','sumuebledanli']},
+  {id:'v_kar',  name:'Karla',       pin:'5353',role:'vendedor',cartera:['sumotodanli','sumuebledanli']},
+  {id:'v_jor',  name:'Jorge',       pin:'5454',role:'vendedor',cartera:['sumotodanli','sumuebledanli']}
 ],carteras:[
-  {id:'roca1',   name:'Roca 1'},
-  {id:'rocam1',  name:'Roca Motors 1'},
-  {id:'rocam2',  name:'Roca Motors 2'},
-  {id:'sumueble',name:'Su Mueble'},
-  {id:'sumoto',  name:'Su Moto'}
+  {id:'roca1',        name:'Roca 1'},
+  {id:'roca1motors',   name:'Roca Motors 1'},
+  {id:'roca2motors',   name:'Roca Motors 2'},
+  {id:'sumotodanli',   name:'Su Moto'},
+  {id:'sumuebledanli', name:'Su Mueble'}
 ],clients:{},calls:[],activity:[],newLeads:[]};localStorage.setItem(SK,JSON.stringify(d));return d;}
 
 var DB=loadDB(),CU=null,CCI=null,pinBuf='',activeCat='all',activeYear='todos',activeCart=null;
@@ -463,7 +473,7 @@ function syncUsersToSB(){
 function launchApp(){
   document.getElementById('s-app').classList.add('on');
   if(CU.role==='admin')syncUsersToSB();
-  buildSB();activeCart=CU.role==='vendedor'?(Array.isArray(CU.cartera)?CU.cartera[0]:CU.cartera):null;activeYear='todos';activeCat='all';
+  buildSB();activeCart=null;activeYear='todos';activeCat='all';
   connectRealtime(); // conectar realtime al entrar
   var dest=CU.role==='admin'||CU.role==='subadmin'?'dashboard':'clientes';
   // Show loading screen while fetching from Supabase
@@ -471,7 +481,11 @@ function launchApp(){
   loadFromSB().then(function(){
     goTo(dest);
     buildSB();
-    toast('Datos cargados ✓','ok');
+    // DEBUG temporal: mostrar cartera_ids recibidos de Supabase
+    var cidKeys=Object.keys(DB.clients);
+    var cidInfo=cidKeys.map(function(k){return k+'('+DB.clients[k].length+')'}).join(', ');
+    toast('Carteras: '+(cidInfo||'NINGUNA'),'ok');
+    console.log('DB.clients keys:',cidKeys,'CU.cartera:',CU.cartera);
   }).catch(function(){
     goTo(dest);
   });
@@ -531,13 +545,12 @@ function getCarterasVend(){
   return fromCalls.length?fromCalls:DB.carteras.map(function(x){return x.id;});
 }
 function getPool(){
-  if(CU.role==='vendedor'){
-    var cids=getCarterasVend();
-    return cids.flatMap(function(cid){
-      var cn=(DB.carteras.find(function(x){return x.id===cid;})||{name:''}).name;
-      return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid,_cn:cn});});
-    });
-  }var cids=activeCart?[activeCart]:DB.carteras.map(function(x){return x.id;});return cids.flatMap(function(cid){var cn=(DB.carteras.find(function(x){return x.id===cid;})||{name:''}).name;return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid,_cn:cn});});});}
+  var cids=activeCart?[activeCart]:DB.carteras.map(function(x){return x.id;});
+  return cids.flatMap(function(cid){
+    var cn=(DB.carteras.find(function(x){return x.id===cid;})||{name:''}).name;
+    return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid,_cn:cn});});
+  });
+}
 
 // Normaliza nombre de vendedor para comparar (case-insensitive)
 function vendNorm(v){return(v||'').trim().toLowerCase();}
@@ -549,6 +562,12 @@ function callBelongsTo(call,vendName){
 }
 // Obtiene el nombre display de una gestión (siempre userName)
 function callVendName(call){return call.userName||call.userId||'';}
+function buildCartPillsCustom(cur,fn,carteras,pid){
+  var h='<div class="filter-row" id="'+(pid||'cp-'+fn)+'">';
+  h+='<div class="ytab '+(cur===null?'on':'')+'" onclick="'+fn+'(null,this)">Todas</div>';
+  carteras.forEach(function(c){h+='<div class="ytab '+(cur===c.id?'on':'')+'" data-cid="'+c.id+'" onclick="'+fn+'(this.dataset.cid,this)">'+c.name+'</div>';});
+  return h+'</div>';
+}
 function buildCartPills(cur,fn,pid){var h='<div class="filter-row" id="'+(pid||'cp-'+fn)+'"><div class="ytab '+(cur===null?'on':'')+'" onclick="'+fn+'(null,this)">Todas</div>';DB.carteras.forEach(function(c){h+='<div class="ytab '+(cur===c.id?'on':'')+'" data-cid="'+c.id+'" onclick="'+fn+'(this.dataset.cid,this)">'+c.name+'</div>';});return h+'</div>';}
 function buildVendPills(cur,fn,pid,cid){
   // All users + names from calls, normalized
@@ -587,7 +606,7 @@ function closeSB(){document.getElementById('sidebar').classList.remove('open');d
 function toast(msg,type){var t=document.getElementById('toast');t.textContent=(type==='ok'?'✅ ':'❌ ')+msg;t.className='toast '+(type||'ok')+' show';setTimeout(function(){t.classList.remove('show');},3000);}
 function logAct(txt,cid){DB.activity.push({txt:txt,cid:cid,time:new Date().toLocaleString('es-HN')});if(DB.activity.length>100)DB.activity.shift();saveDB();}
 function vClientes(){
-  var isA=CU.role!=='vendedor';var cartH=isA?buildCartPills(activeCart,'setCart'):'';
+  var cartH=buildCartPills(activeCart,'setCart');
   var pool=getPool();var yrs={todos:1};pool.forEach(function(c){(c.payments||[]).forEach(function(p){if(p.fecha){var pt=p.fecha.split('/');if(pt.length===3)yrs[pt[2]]=1;}});});
   var sy=Object.keys(yrs).sort(function(a,b){return a==='todos'?-1:b==='todos'?1:b-a;});
   var yH='<div class="filter-row">'+sy.map(function(y){return '<div class="ytab '+(activeYear===y?'on':'')+'" data-yr="'+y+'" onclick="setYear(this)">'+(y==='todos'?'📅 Todos':y)+'</div>';}).join('')+'</div>';
@@ -876,7 +895,7 @@ function renderKanban(){
     }
     cids=[];colField='leadCol';defCol='nl';
   } else {
-    cids=kbActiveCart?[kbActiveCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
+    cids=kbActiveCart?[kbActiveCart]:DB.carteras.map(function(x){return x.id;});
     var kbVendNorm=kbSelVend?(kbSelVend.trim().toLowerCase()):null;
     // Mostrar TODOS los clientes de la(s) cartera(s) sin filtrar por gestiones
     pool=cids.flatMap(function(cid){
@@ -1075,7 +1094,7 @@ function setSegVend(v,el){segSelVend=v;document.querySelectorAll('#vp-seg .ytab'
 function renderSeg(){renderSegSum();renderSegCharts();renderCal();}
 function renderSegSum(){
   var el=document.getElementById('seg-sum');if(!el)return;
-  var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
+  var cids=segCart?[segCart]:DB.carteras.map(function(x){return x.id;});
   var today=new Date().toISOString().slice(0,10);
   var calls=DB.calls.filter(function(c){return cids.includes(c.carteraId)&&(!segSelVend||callBelongsTo(c,segSelVend));});
   var vSum={};calls.forEach(function(call){var k=callVendName(call);if(!vSum[k]){var cart=DB.carteras.find(function(c){return c.id===call.carteraId;});vSum[k]={name:k,cartera:cart?cart.name:'',total:0,hoy:0};}vSum[k].total++;if((call.dateISO||'')===today)vSum[k].hoy++;});
@@ -1098,7 +1117,7 @@ function renderSegSum(){
 }
 function renderSegCharts(){
   var c1=document.getElementById('ch-sv'),c2=document.getElementById('ch-sr');if(!c1||!c2)return;
-  var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
+  var cids=segCart?[segCart]:DB.carteras.map(function(x){return x.id;});
   var calls=DB.calls.filter(function(c){if(!cids.includes(c.carteraId))return false;if(segSelVend&&!callBelongsTo(c,segSelVend))return false;var d=gcd(c);return d&&d.getMonth()===calMonth&&d.getFullYear()===calYear;});
   var vMap={};calls.forEach(function(c){var raw=callVendName(c);var nk=vendNorm(raw);var ek=Object.keys(vMap).find(function(k){return vendNorm(k)===nk;});var uk=ek||raw;vMap[uk]=(vMap[uk]||0)+1;});var vKeys=Object.keys(vMap).sort(function(a,b){return vMap[b]-vMap[a];});
   if(window._chsv)window._chsv.destroy();
@@ -1248,7 +1267,7 @@ function renderCal(){
   var ttl=document.getElementById('cal-ttl');if(ttl)ttl.textContent=meses[calMonth]+' '+calYear;
   var grid=document.getElementById('cal-grid');if(!grid)return;
   var today=new Date();var firstDay=new Date(calYear,calMonth,1).getDay();var daysInM=new Date(calYear,calMonth+1,0).getDate();
-  var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
+  var cids=segCart?[segCart]:DB.carteras.map(function(x){return x.id;});
   var byDay={};
   DB.calls.filter(function(c){return cids.includes(c.carteraId)&&(!segSelVend||(c.userName||c.userId||'').trim().toLowerCase()===segSelVend.trim().toLowerCase());}).forEach(function(call){var d=gcd(call);if(!d||d.getFullYear()!==calYear||d.getMonth()!==calMonth)return;var day=d.getDate();if(!byDay[day])byDay[day]=[];byDay[day].push(call);});
   var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -1273,7 +1292,7 @@ function renderCal(){
 function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderSeg();}
 function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderSeg();}
 function openDia(dateStr){
-  var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
+  var cids=segCart?[segCart]:DB.carteras.map(function(x){return x.id;});
   var calls=DB.calls.filter(function(c){if(!cids.includes(c.carteraId))return false;if(segSelVend&&!callBelongsTo(c,segSelVend))return false;var d=gcd(c);return d&&d.toISOString().slice(0,10)===dateStr;});
   var d=new Date(dateStr+'T12:00:00');document.getElementById('mov-dia-ttl').textContent=d.toLocaleDateString('es-HN',{weekday:'long',day:'2-digit',month:'long'})+' — '+calls.length+' gestiones';
   var byC={};calls.forEach(function(call){if(!byC[call.carteraId])byC[call.carteraId]=[];byC[call.carteraId].push(call);});
@@ -1288,7 +1307,7 @@ function openDia(dateStr){
   document.getElementById('mov-dia-body').innerHTML=h||'<div class="cl-empty">Sin gestiones este día.</div>';openMov('mov-dia');
 }
 function openVendDetail(vname){
-  var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
+  var cids=segCart?[segCart]:DB.carteras.map(function(x){return x.id;});
   var calls=DB.calls.filter(function(c){return callBelongsTo(c,vname)&&cids.includes(c.carteraId)&&gcd(c)&&gcd(c).getMonth()===calMonth&&gcd(c).getFullYear()===calYear;});
   document.getElementById('mov-dia-ttl').textContent='📊 '+vname+' — '+calls.length+' gestiones este mes';
   var byDay={};calls.forEach(function(c){var d=gcd(c);if(!d)return;var dk=d.toISOString().slice(0,10);if(!byDay[dk])byDay[dk]=[];byDay[dk].push(c);});
