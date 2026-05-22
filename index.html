@@ -546,9 +546,14 @@ function getCarterasVend(){
 }
 function getPool(){
   var cids=activeCart?[activeCart]:DB.carteras.map(function(x){return x.id;});
+  var seen={};
   return cids.flatMap(function(cid){
     var cn=(DB.carteras.find(function(x){return x.id===cid;})||{name:''}).name;
     return(DB.clients[cid]||[]).map(function(c){return Object.assign({},c,{_cid:cid,_cn:cn});});
+  }).filter(function(c){
+    var key=(c.nombre||c.id||'').trim().toLowerCase();
+    if(seen[key])return false;
+    seen[key]=true;return true;
   });
 }
 
