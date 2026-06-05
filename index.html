@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0048)file:///Users/jorgecalix/Downloads/index_89.html -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="La Roca CRM">
 <meta name="theme-color" content="#5b8dee">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="file:///Users/jorgecalix/Downloads/manifest.json">
 <title>La Roca CRM</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="./La Roca CRM monitor_files/xlsx.full.min.js"></script>
+<script src="./La Roca CRM monitor_files/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#eef2f7;color:#2d3748;font-size:15px;min-height:100vh}
@@ -193,15 +193,15 @@ button{cursor:pointer}
 </head>
 <body>
 <!-- LOGIN -->
-<div id="s-login" class="scr on">
+<div id="s-login" class="scr">
   <div class="lbox">
     <div class="llogo"><div class="llogo-ic">🏢</div><h1>La Roca CRM</h1><p>Ingresa tu PIN para continuar</p></div>
     <div class="pdots"><div class="pd" id="pd0">·</div><div class="pd" id="pd1">·</div><div class="pd" id="pd2">·</div><div class="pd" id="pd3">·</div></div>
     <div class="numpad">
-      <button class="nb" onclick="pi('1')">1</button><button class="nb" onclick="pi('2')">2</button><button class="nb" onclick="pi('3')">3</button>
-      <button class="nb" onclick="pi('4')">4</button><button class="nb" onclick="pi('5')">5</button><button class="nb" onclick="pi('6')">6</button>
-      <button class="nb" onclick="pi('7')">7</button><button class="nb" onclick="pi('8')">8</button><button class="nb" onclick="pi('9')">9</button>
-      <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi('0')">0</button><button class="nb sm" onclick="pinDel()">&#9003;</button>
+      <button class="nb" onclick="pi(&#39;1&#39;)">1</button><button class="nb" onclick="pi(&#39;2&#39;)">2</button><button class="nb" onclick="pi(&#39;3&#39;)">3</button>
+      <button class="nb" onclick="pi(&#39;4&#39;)">4</button><button class="nb" onclick="pi(&#39;5&#39;)">5</button><button class="nb" onclick="pi(&#39;6&#39;)">6</button>
+      <button class="nb" onclick="pi(&#39;7&#39;)">7</button><button class="nb" onclick="pi(&#39;8&#39;)">8</button><button class="nb" onclick="pi(&#39;9&#39;)">9</button>
+      <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi(&#39;0&#39;)">0</button><button class="nb sm" onclick="pinDel()">⌫</button>
     </div>
     <div class="lerr" id="lerr"></div>
   </div>
@@ -212,41 +212,41 @@ button{cursor:pointer}
     <div style="font-size:36px;margin-bottom:10px">👋</div>
     <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">¡Bienvenido!</h2>
     <p id="sn-cart" style="font-size:12px;color:var(--t2)">Cartera asignada</p>
-    <input class="fi" id="inp-nom" placeholder="Escribe tu nombre completo" onkeydown="if(event.key==='Enter')guardarNom()" />
+    <input class="fi" id="inp-nom" placeholder="Escribe tu nombre completo" onkeydown="if(event.key===&#39;Enter&#39;)guardarNom()">
     <button class="btn-blue" onclick="guardarNom()">Entrar →</button>
     <div class="lerr" id="nom-err"></div>
   </div>
 </div>
 <!-- APP -->
-<div id="s-app" class="scr">
+<div id="s-app" class="scr on">
   <div class="sb-ov" id="sb-ov" onclick="closeSB()"></div>
   <nav class="sb" id="sidebar">
     <div class="sb-brand"><div class="sb-dot"></div>La Roca CRM</div>
-    <div class="sb-user"><div class="av" id="sb-av">?</div><div><div class="sb-uname" id="sb-un">—</div><div class="sb-urole" id="sb-ur">—</div></div></div>
-    <div class="sb-nav" id="sb-nav"></div>
-    <div class="sb-foot"><button class="btn-out" onclick="doLogout()">&#x2192; Cambiar usuario</button></div>
+    <div class="sb-user"><div class="av" id="sb-av">J</div><div><div class="sb-uname" id="sb-un">Jorge Daniel</div><div class="sb-urole" id="sb-ur">Administrador</div></div></div>
+    <div class="sb-nav" id="sb-nav"><div style="padding: 10px 8px 4px; font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.09em; margin-top: 6px;">Principal</div><div class="ni" id="ni-dashboard"><span class="ni-ic">📊</span>Dashboard</div><div class="ni" id="ni-clientes"><span class="ni-ic">👥</span>Clientes</div><div class="ni" id="ni-kanban"><span class="ni-ic">⊞</span>Kanban</div><div class="ni" id="ni-seguimiento"><span class="ni-ic">📅</span>Seguimiento</div><div style="padding: 10px 8px 4px; font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.09em; margin-top: 6px;">Gestión</div><div class="ni" id="ni-subir"><span class="ni-ic">📤</span>Subir cartera</div><div class="ni" id="ni-equipo"><span class="ni-ic">👤</span>Equipo</div><div class="ni" id="ni-monitor"><span class="ni-ic">📡</span>Monitor</div></div>
+    <div class="sb-foot"><button class="btn-out" onclick="doLogout()">→ Cambiar usuario</button></div>
   </nav>
   <div class="main">
     <div class="topbar">
-      <button class="hburg" onclick="openSB()">&#9776;</button>
-      <span class="tb-ttl" id="tb-ttl">Inicio</span>
+      <button class="hburg" onclick="openSB()">☰</button>
+      <span class="tb-ttl" id="tb-ttl">Dashboard</span>
       <span class="tb-chip" id="tb-chip" style="display:none"></span>
     </div>
-    <div class="pcontent" id="pcontent"></div>
+    <div class="pcontent" id="pcontent"><div class="filter-row" id="cp-dash"><div class="ytab on" onclick="setDashCart(null,this)">Todas</div><div class="ytab " data-cid="roca1" onclick="setDashCart(this.dataset.cid,this)">Roca 1</div><div class="ytab " data-cid="roca1motors" onclick="setDashCart(this.dataset.cid,this)">Roca Motors 1</div><div class="ytab " data-cid="roca2motors" onclick="setDashCart(this.dataset.cid,this)">Roca Motors 2</div><div class="ytab " data-cid="sumotodanli" onclick="setDashCart(this.dataset.cid,this)">Su Moto Danli</div><div class="ytab " data-cid="sumuebledanli" onclick="setDashCart(this.dataset.cid,this)">Su Mueble Danli</div></div><div class="filter-row" id="vp-dash"><div class="ytab on" onclick="setDashVend(null,this)">👥 Todos</div><div class="ytab " data-vend="1" onclick="setDashVend(this.dataset.vend,this)">👤 1</div><div class="ytab " data-vend="Alejandra" onclick="setDashVend(this.dataset.vend,this)">👤 Alejandra (55)</div><div class="ytab " data-vend="Allison" onclick="setDashVend(this.dataset.vend,this)">👤 Allison (1)</div><div class="ytab " data-vend="ANA" onclick="setDashVend(this.dataset.vend,this)">👤 ANA (3)</div><div class="ytab " data-vend="Ana Castro" onclick="setDashVend(this.dataset.vend,this)">👤 Ana Castro</div><div class="ytab " data-vend="Brayan" onclick="setDashVend(this.dataset.vend,this)">👤 Brayan</div><div class="ytab " data-vend="Denys" onclick="setDashVend(this.dataset.vend,this)">👤 Denys</div><div class="ytab " data-vend="fer" onclick="setDashVend(this.dataset.vend,this)">👤 fer (35)</div><div class="ytab " data-vend="Gabriela" onclick="setDashVend(this.dataset.vend,this)">👤 Gabriela (4)</div><div class="ytab " data-vend="johana" onclick="setDashVend(this.dataset.vend,this)">👤 johana</div><div class="ytab " data-vend="Jorge" onclick="setDashVend(this.dataset.vend,this)">👤 Jorge (3)</div><div class="ytab " data-vend="Jorge Daniel" onclick="setDashVend(this.dataset.vend,this)">👤 Jorge Daniel (7)</div><div class="ytab " data-vend="Karla" onclick="setDashVend(this.dataset.vend,this)">👤 Karla (30)</div><div class="ytab " data-vend="Milagro" onclick="setDashVend(this.dataset.vend,this)">👤 Milagro (15)</div><div class="ytab " data-vend="Sayda" onclick="setDashVend(this.dataset.vend,this)">👤 Sayda (17)</div></div><div class="filter-row" style="margin-bottom:18px;"><button class="ytab on" data-tab="todos" onclick="setDashTab(this)">🌐 Todos</button><button class="ytab " data-tab="recompra" onclick="setDashTab(this)">📋 Recompra</button><button class="ytab " data-tab="nuevos" onclick="setDashTab(this)">✨ Clientes Nuevos</button></div><div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">📋 Recompra</div><div class="sg" style="margin-bottom:20px;"><div class="sc"><div class="sc-ic">🔵</div><div class="sc-l" style="color:#6366f1">Prospecto</div><div class="sc-v" style="color:#6366f1">20</div></div><div class="sc"><div class="sc-ic">📞</div><div class="sc-l" style="color:#5b8dee">Contactado</div><div class="sc-v" style="color:#5b8dee">4</div></div><div class="sc"><div class="sc-ic">⭐</div><div class="sc-l" style="color:#ed8936">Interesado</div><div class="sc-v" style="color:#ed8936">4</div></div><div class="sc"><div class="sc-ic">💬</div><div class="sc-l" style="color:#9f7aea">Negociando</div><div class="sc-v" style="color:#9f7aea">2</div></div><div class="sc"><div class="sc-ic">💳</div><div class="sc-l" style="color:#38b2ac">En credito</div><div class="sc-v" style="color:#38b2ac">7</div></div><div class="sc"><div class="sc-ic">🎉</div><div class="sc-l" style="color:#48bb78">Vendido</div><div class="sc-v" style="color:#48bb78">2</div></div><div class="sc"><div class="sc-ic">❌</div><div class="sc-l" style="color:#fc8181">Perdido</div><div class="sc-v" style="color:#fc8181">1</div></div><div class="sc"><div class="sc-ic">👥</div><div class="sc-l">Total</div><div class="sc-v">40</div></div></div><div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:4px;">✨ Clientes Nuevos</div><div class="sg" style="margin-bottom:20px;"><div class="sc"><div class="sc-ic">✨</div><div class="sc-l" style="color:#4299e1">Lead nuevo</div><div class="sc-v" style="color:#4299e1">17</div></div><div class="sc"><div class="sc-ic">📞</div><div class="sc-l" style="color:#5b8dee">Contactado</div><div class="sc-v" style="color:#5b8dee">14</div></div><div class="sc"><div class="sc-ic">⭐</div><div class="sc-l" style="color:#ed8936">Interesado</div><div class="sc-v" style="color:#ed8936">14</div></div><div class="sc"><div class="sc-ic">💬</div><div class="sc-l" style="color:#9f7aea">Negociando</div><div class="sc-v" style="color:#9f7aea">4</div></div><div class="sc"><div class="sc-ic">💳</div><div class="sc-l" style="color:#38b2ac">En credito</div><div class="sc-v" style="color:#38b2ac">0</div></div><div class="sc"><div class="sc-ic">🎉</div><div class="sc-l" style="color:#48bb78">Vendido</div><div class="sc-v" style="color:#48bb78">6</div></div><div class="sc"><div class="sc-ic">❌</div><div class="sc-l" style="color:#fc8181">Perdido</div><div class="sc-v" style="color:#fc8181">0</div></div><div class="sc"><div class="sc-ic">👥</div><div class="sc-l">Total</div><div class="sc-v">55</div></div></div><div class="ch2"><div class="chart-card"><div class="chart-ttl">📊 Recompra — etapas Kanban</div><canvas id="ch-kb" height="1342" style="display: block; box-sizing: border-box; height: 671px; width: 671px;" width="1342"></canvas></div><div class="chart-card"><div class="chart-ttl">✨ Clientes Nuevos — etapas</div><canvas id="ch-kb2" height="1342" width="1342" style="display: block; box-sizing: border-box; height: 671px; width: 671px;"></canvas></div></div><div class="chart-card"><div class="chart-ttl">🏆 Gestiones por vendedor</div><canvas id="ch-vend" height="1678" width="2798" style="display: block; box-sizing: border-box; height: 839px; width: 1399px;"></canvas></div><div class="chart-card"><div class="chart-ttl">📈 Recompra por cartera y etapa</div><canvas id="ch-cart" height="1212" width="2798" style="display: block; box-sizing: border-box; height: 606px; width: 1399px;"></canvas></div></div>
   </div>
 </div>
 <!-- MODAL CLIENTE -->
 <div class="mov" id="mov-cl">
   <div class="modal">
-    <div class="mh"><div class="mh-l"><div class="av" id="mc-av" style="width:34px;height:34px;font-size:13px">?</div><div><div class="mh-name" id="mc-nm">—</div><div id="mc-cat" style="font-size:11px;margin-top:2px"></div></div></div><div class="mclose" onclick="closeMov('mov-cl')">&#x2715;</div></div>
+    <div class="mh"><div class="mh-l"><div class="av" id="mc-av" style="width:34px;height:34px;font-size:13px">?</div><div><div class="mh-name" id="mc-nm">—</div><div id="mc-cat" style="font-size:11px;margin-top:2px"></div></div></div><div class="mclose" onclick="closeMov(&#39;mov-cl&#39;)">✕</div></div>
     <div class="mbody" id="mc-body"></div>
-    <div class="mfoot" id="mfoot-cl"><button class="btn-s" onclick="closeMov('mov-cl')">Cerrar</button><button class="btn-p" onclick="openCallF()">&#128222; Registrar gestión</button></div>
+    <div class="mfoot" id="mfoot-cl"><button class="btn-s" onclick="closeMov(&#39;mov-cl&#39;)">Cerrar</button><button class="btn-p" onclick="openCallF()">📞 Registrar gestión</button></div>
   </div>
 </div>
 <!-- MODAL GESTIÓN -->
 <div class="mov" id="mov-call">
   <div class="modal">
-    <div class="mh"><span class="mh-name">&#128222; Registrar gestión</span><div class="mclose" onclick="closeMov('mov-call')">&#x2715;</div></div>
+    <div class="mh"><span class="mh-name">📞 Registrar gestión</span><div class="mclose" onclick="closeMov(&#39;mov-call&#39;)">✕</div></div>
     <div class="mbody">
       <div class="frow">
         <div class="fg"><label class="fl">Resultado</label>
@@ -264,35 +264,35 @@ button{cursor:pointer}
             <option value="pago">✅ Pagó</option><option value="urgente">🔴 Urgente</option><option value="pendiente">⏳ Pendiente</option>
           </select></div>
       </div>
-      <div class="fg"><label class="fl">Número alterno</label><input class="finp" id="f-num2" placeholder="Ej: 9876-5432" /></div>
-      <div class="fg"><label class="fl">Producto ofrecido</label><input class="finp" id="f-prod" placeholder="Ej: Moto Honda Wave..." /></div>
+      <div class="fg"><label class="fl">Número alterno</label><input class="finp" id="f-num2" placeholder="Ej: 9876-5432"></div>
+      <div class="fg"><label class="fl">Producto ofrecido</label><input class="finp" id="f-prod" placeholder="Ej: Moto Honda Wave..."></div>
       <div class="fg"><label class="fl">Notas</label><textarea class="ftxt" id="f-nota" placeholder="¿Qué dijo? ¿Compromisos?"></textarea></div>
     </div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-call')">Cancelar</button><button class="btn-p" onclick="saveCall()">Guardar</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-call&#39;)">Cancelar</button><button class="btn-p" onclick="saveCall()">Guardar</button></div>
   </div>
 </div>
 <!-- MODAL DÍA -->
 <div class="mov" id="mov-dia">
   <div class="modal">
-    <div class="mh"><span class="mh-name" id="mov-dia-ttl">Gestiones</span><div class="mclose" onclick="closeMov('mov-dia')">&#x2715;</div></div>
+    <div class="mh"><span class="mh-name" id="mov-dia-ttl">Gestiones</span><div class="mclose" onclick="closeMov(&#39;mov-dia&#39;)">✕</div></div>
     <div class="mbody" id="mov-dia-body"></div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-dia')">Cerrar</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-dia&#39;)">Cerrar</button></div>
   </div>
 </div>
 <!-- MODAL USUARIO -->
 <div class="mov" id="mov-usr">
   <div class="modal">
-    <div class="mh"><span class="mh-name">&#128100; Nuevo usuario</span><div class="mclose" onclick="closeMov('mov-usr')">&#x2715;</div></div>
+    <div class="mh"><span class="mh-name">👤 Nuevo usuario</span><div class="mclose" onclick="closeMov(&#39;mov-usr&#39;)">✕</div></div>
     <div class="mbody">
-      <div class="fg"><label class="fl">Nombre</label><input class="finp" id="nu-nm" placeholder="Nombre completo" /></div>
+      <div class="fg"><label class="fl">Nombre</label><input class="finp" id="nu-nm" placeholder="Nombre completo"></div>
       <div class="fg"><label class="fl">Rol</label><select class="fsel" id="nu-rol"><option value="vendedor">Vendedor</option><option value="subadmin">Gerente de tienda</option></select></div>
       <div class="fg"><label class="fl">Carteras (selecciona una o varias)</label><div id="nu-cart-checks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div></div>
-      <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="finp" id="nu-pin" placeholder="0000" maxlength="4" type="tel" /></div>
+      <div class="fg"><label class="fl">PIN (4 dígitos)</label><input class="finp" id="nu-pin" placeholder="0000" maxlength="4" type="tel"></div>
     </div>
-    <div class="mfoot"><button class="btn-s" onclick="closeMov('mov-usr')">Cancelar</button><button class="btn-p" onclick="saveUsr()">Crear</button></div>
+    <div class="mfoot"><button class="btn-s" onclick="closeMov(&#39;mov-usr&#39;)">Cancelar</button><button class="btn-p" onclick="saveUsr()">Crear</button></div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast ok" id="toast">✅ Bienvenido, Jorge Daniel 👋</div>
 
 <script>
 var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='sb_publishable_7O5xAYXC5H_OrYmTykIgyQ_hR3IkvCg';
@@ -1716,5 +1716,6 @@ window.addEventListener('DOMContentLoaded',function(){
 });
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
-</body>
-</html>
+
+
+</body></html>
