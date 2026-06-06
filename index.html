@@ -1793,13 +1793,9 @@ setInterval(function(){
   var kbModal=document.getElementById('kb-modal-overlay');
   var anyModal=document.querySelector('.mov.open');
   if(kbModal||anyModal)return;
-  loadFromSB().then(function(){
-    var ttl=document.getElementById('tb-ttl');if(!ttl)return;
-    var view=ttl.textContent.toLowerCase();
-    var map={dashboard:'dashboard',clientes:'clientes',kanban:'kanban',seguimiento:'seguimiento'};
-    var cur=map[view];if(cur)goTo(cur);
-  });
-},10000);
+  // Don't reset search - use reRenderCurrent instead of goTo
+  loadFromSB().then(reRenderCurrent);
+},30000);
 
 var _rtChannel=null,_rtRetry=null;
 function connectRealtime(){
@@ -1837,7 +1833,10 @@ function reRenderCurrent(){
   if(v.includes('kanban'))renderKanban();
   else if(v.includes('dashboard')){var pc=document.getElementById('pcontent');if(pc){pc.innerHTML=vDash();renderDashCharts();}}
   else if(v.includes('seguimiento')){renderSeg();}
-  else if(v.includes('clientes'))renderCards();
+  else if(v.includes('clientes')){
+    // Only re-render cards, preserve search text and filters
+    renderCards();
+  }
 }
 window.addEventListener('DOMContentLoaded',function(){
   // Sync users from Supabase silently, then show login
