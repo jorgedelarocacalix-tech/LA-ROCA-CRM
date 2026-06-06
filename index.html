@@ -1473,6 +1473,124 @@ var TIPOS={'interesado':'Gestion','no-interesado':'Gestion','seguimiento':'Gesti
 var TIPO_COL={'Gestion':'#22c55e','Kanban recompra':'#60a5fa','Kanban leads':'#f59e0b','Comentario':'#a78bfa','Lead nuevo':'#fb923c'};
 var TIPO_IC={'Gestion':'📞','Kanban recompra':'🔄','Kanban leads':'📋','Comentario':'💬','Lead nuevo':'✨'};
 var REALES=['interesado','no-interesado','seguimiento','se-acordo-visita','cambio-numero','promesa-pago','pago-realizado','contactado','no-contesta','numero-incorrecto'];
+
+function openMonDetalle(nombre){
+  // Buscar historial de los últimos 7 días para este vendedor
+  var dias=[];
+  for(var i=6;i>=0;i--){
+    var d=new Date(Date.now()-(6*3600000));
+    d.setUTCDate(d.getUTCDate()-i);
+    dias.push(d.toISOString().slice(0,10));
+  }
+  // Filtrar calls de DB local
+  var calls=DB.calls.filter(function(x){return(x.userName||'').trim().toLowerCase()===nombre.trim().toLowerCase();});
+  // Modal overlay
+  var ex=document.getElementById('mon-detalle-ov');if(ex)ex.remove();
+  var ov=document.createElement('div');
+  ov.id='mon-detalle-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  var box=document.createElement('div');
+  box.style.cssText='background:#1e293b;border-radius:16px;width:100%;max-width:600px;margin:auto;border:1px solid #334155;';
+  // Header
+  var hdr=document.createElement('div');
+  hdr.style.cssText='padding:18px 20px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;';
+  hdr.innerHTML='<div><div style="font-size:16px;font-weight:700;color:#f8fafc;">📊 '+nombre+' — Últimos 7 días</div><div style="font-size:11px;color:#64748b;margin-top:3px;">Detalle de actividad por día</div></div>'+
+    '<div onclick="document.getElementById(\'mon-detalle-ov\').remove()" style="width:32px;height:32px;background:#0f172a;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#94a3b8;">✕</div>';
+  box.appendChild(hdr);
+  // Body
+  var body=document.createElement('div');
+  body.style.cssText='padding:16px 20px;';
+  var html='';
+  dias.forEach(function(dia){
+    var dCalls=calls.filter(function(x){
+      var iso=x.dateISO||'';
+      if(!iso&&x.date){var p=x.date.split('/');if(p.length===3)iso=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');}
+      return iso===dia;
+    });
+    // También buscar en gestiones de Supabase (las que están en DB.calls)
+    var d=new Date(dia+'T12:00:00Z');
+    var diasSemana=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    var dow=diasSemana[d.getUTCDay()];
+    var esHoy=dia===monFechaHN(0);
+    var esWE=d.getUTCDay()===0||d.getUTCDay()===6;
+    // Agrupar por tipo
+    var porTipo={};
+    dCalls.forEach(function(x){
+      var t=TIPOS[x.resultado]||'Gestion';
+      if(!porTipo[t])porTipo[t]=[];
+      porTipo[t].push(x);
+    });
+    var total=dCalls.length;
+    var bg=total>0?'background:#0f172a;border:1px solid #22c55e33;':(esWE?'background:#0a0f1a;border:1px solid #1e293b;':'background:#0a0f1a;border:1px solid #1e293b;');
+    html+='<div style="'+bg+'border-radius:10px;padding:12px 14px;margin-bottom:8px;">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(total>0?'10':'0')+'px;">';
+    html+='<div style="display:flex;align-items:center;gap:8px;">';
+    html+='<span style="font-size:11px;font-weight:700;color:'+(esHoy?'#6366f1':'#94a3b8')+';">'+dow+' '+dia.slice(5)+'</span>';
+    if(esHoy)html+='<span style="font-size:9px;background:#6366f133;color:#818cf8;padding:1px 6px;border-radius:99px;">HOY</span>';
+    html+='</div>';
+    html+='<span style="font-size:12px;font-weight:800;color:'+(total>0?'#22c55e':'#334155')+';">'+( total>0?total+' acciones':'Sin actividad')+'</span>';
+    html+='</div>';
+    if(total>0){
+      Object.entries(porTipo).forEach(function(e){
+        var tipo=e[0],items=e[1];
+        var col=TIPO_COL[tipo]||'#94a3b8';
+        var ic=TIPO_IC[tipo]||'●';
+        html+='<div style="margin-bottom:6px;">';
+        html+='<div style="font-size:10px;font-weight:700;color:'+col+';margin-bottom:3px;">'+ic+' '+tipo+' ('+items.length+')</div>';
+        items.forEach(function(x){
+          // Buscar nombre del cliente y tipo
+          var clienteNombre='';
+          var tipoCliente='';
+          var tipoColor='';
+          var resultado=(x.resultado||'').replace(/-/g,' ');
+          var notas=x.notas?x.notas:'';
+          var producto=x.producto?x.producto:'';
+
+          if(x.resultado==='kanban-lead'||x.resultado==='comentario-lead'||x.resultado==='lead-nuevo'||x.carteraId==='leads'){
+            // Cliente nuevo / lead
+            tipoCliente='✨ Cliente Nuevo';
+            tipoColor='#fb923c';
+            // nombre guardado en producto field para actividades
+            clienteNombre=x.producto||'';
+          } else if(x.clientId){
+            // Recompra — buscar en DB
+            tipoCliente='🔄 Recompra';
+            tipoColor='#60a5fa';
+            var cid=x.carteraId;
+            var cl=(DB.clients[cid]||[]).find(function(z){return z.id===x.clientId;});
+            if(cl)clienteNombre=cl.nombre;
+            // cartera name
+            var cartObj=DB.carteras.find(function(z){return z.id===cid;});
+            if(cartObj)tipoCliente='🔄 Recompra · '+cartObj.name;
+          } else if(x.producto){
+            // actividad registrada (kanban move etc) - nombre en producto
+            clienteNombre=x.producto;
+            tipoCliente=x.carteraId==='leads'?'✨ Cliente Nuevo':'🔄 Recompra';
+            tipoColor=x.carteraId==='leads'?'#fb923c':'#60a5fa';
+            var cartObj2=DB.carteras.find(function(z){return z.id===x.carteraId;});
+            if(cartObj2&&x.carteraId!=='leads')tipoCliente='🔄 Recompra · '+cartObj2.name;
+          }
+
+          html+='<div style="padding:7px 10px;margin-bottom:5px;border-left:3px solid '+(tipoColor||col)+';background:#0f172a55;border-radius:0 8px 8px 0;">';
+          if(tipoCliente)html+='<div style="font-size:9px;font-weight:700;color:'+(tipoColor||col)+';text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">'+tipoCliente+'</div>';
+          if(clienteNombre)html+='<div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:2px;">👤 '+clienteNombre+'</div>';
+          if(resultado&&REALES.indexOf(x.resultado)>=0)html+='<div style="font-size:11px;color:'+col+';">'+resultado+'</div>';
+          if(notas&&REALES.indexOf(x.resultado)>=0)html+='<div style="font-size:11px;color:#64748b;margin-top:1px;">📝 '+notas+'</div>';
+          if(producto&&REALES.indexOf(x.resultado)<0)html+='<div style="font-size:11px;color:#94a3b8;">'+producto+'</div>';
+          if(x.notas&&REALES.indexOf(x.resultado)<0)html+='<div style="font-size:11px;color:#64748b;">'+x.notas+'</div>';
+          html+='</div>';
+        });
+        html+='</div>';
+      });
+    }
+    html+='</div>';
+  });
+  body.innerHTML=html||'<div style="color:#475569;text-align:center;padding:20px;">Sin actividad en los últimos 7 días</div>';
+  box.appendChild(body);
+  ov.appendChild(box);
+  ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  document.body.appendChild(ov);
+}
 async function loadMonitor(){
   var fechaHN=monFechaHN(monOffset);
   var start=fechaHN+'T06:00:00.000Z';
@@ -1625,7 +1743,7 @@ async function loadMonitor(){
         }).join('')
       :'<span style="font-size:10px;color:#334155;font-style:italic;">Sin movimiento</span>';
 
-    return '<div style="background:#1e293b;border-radius:12px;padding:14px;'+cls+'">'+
+    return '<div style="background:#1e293b;border-radius:12px;padding:14px;cursor:pointer;'+cls+'" onclick="openMonDetalle(\''+v.name+'\')">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'+
         '<span style="font-size:14px;font-weight:700;color:#f8fafc;">'+v.name+'</span>'+
         '<span style="font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700;'+badgeStyle+'">'+badgeTxt+'</span>'+
