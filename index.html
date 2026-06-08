@@ -299,7 +299,7 @@ var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='sb_publishable_7O5
 function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':m==='POST'?'resolution=merge-duplicates':''},...(b?{body:JSON.stringify(b)}:{})}).then(function(r){if(!r.ok)return null;return(m||'GET')==='GET'?r.json():true;}).catch(function(){return null;});}
 function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
-function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',payments:c.payments||[]});}
+function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual'});}
 function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
 function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null});}
 function loadFromSB(){
@@ -317,7 +317,7 @@ function loadFromSB(){
     return fetchPage(0);
   }
   return Promise.all([
-    fetchAll('clientes','?select=*&order=nombre'),
+    fetchAll('clientes','?select=id,cartera_id,nombre,telefono,estado,kb_col,kb_comments,total_pagos,monto_total,ultimo_pago,primer_pago,antiguedad,patron,updated_at&order=nombre'),
     fetchAll('gestiones','?select=*&order=created_at'),
     sbF('usuarios','GET',null,'?select=*'),
     fetchAll('leads','?select=*&order=created_at')
@@ -403,7 +403,7 @@ function saveDB(){try{
   Object.keys(DB.clients).forEach(function(cid){
     s.clients[cid]=(DB.clients[cid]||[]).map(function(c){
       var cc=Object.assign({},c);
-      if(cc.payments&&cc.payments.length>6)cc.payments=cc.payments.slice(-6);
+      cc.payments=[];
       return cc;
     });
   });
@@ -768,8 +768,7 @@ function openCl(cid,clientId){
   var sbH='<div class="score-box"><div class="stl" style="margin-bottom:10px;">📊 Puntaje crediticio</div>';
   sc.rsns.forEach(function(r){sbH+='<div class="sbd-row"><span class="sbd-ic">'+r.ic+'</span><span class="sbd-tx">'+r.tx+'</span><span class="sbd-pt '+(r.pt>0?'pos':r.pt<0?'neg':'neu')+'">'+(r.pt>0?'+':'')+r.pt+'</span></div>';});
   sbH+='</div>';
-  var filtP=activeYear==='todos'?c.payments||[]:(c.payments||[]).filter(function(p){if(!p.fecha)return false;var pt=p.fecha.split('/');return pt.length===3&&pt[2]===activeYear;});
-  var payH='';if(filtP.length){payH='<div class="stl">💰 Pagos ('+filtP.length+')</div><div class="pay-list">';filtP.slice().reverse().slice(0,12).forEach(function(p){payH+='<div class="pay-row"><span class="pay-date">'+p.fecha+'</span><span class="pay-forma">'+(p.forma||'')+'</span><span class="pay-amt">L '+( p.monto||0).toLocaleString('es-HN',{maximumFractionDigits:0})+'</span></div>';});payH+='</div>';}
+  var payH='<div class="stl" id="pay-stl">💰 Pagos</div><div id="pay-list-wrap"><div style="font-size:12px;color:var(--t3);padding:8px 0;">⏳ Cargando pagos...</div></div>';
   var callH='<div class="stl">📋 Historial de gestiones ('+calls.length+')</div><div class="call-log">';
   if(!calls.length)callH+='<div class="cl-empty">Sin gestiones aún. Registra la primera llamada.</div>';
   else calls.slice().reverse().forEach(function(call){
@@ -797,6 +796,7 @@ function openCl(cid,clientId){
     var gb=document.createElement('button');gb.className='btn-p';gb.textContent='Registrar gestion';gb.onclick=openCallF;mf.appendChild(gb);
   }
   openMov('mov-cl');
+  loadPagos(clientId);
 }
 function cambEst(btn){var cid=btn.dataset.cid,clientId=btn.dataset.clid,est=btn.dataset.est;var c=(DB.clients[cid]||[]).find(function(x){return x.id===clientId;});if(!c)return;c.estado=est;saveDB();saveCtoSB(c,cid);document.getElementById('est-wrap').querySelectorAll('.ep').forEach(function(b){b.className='ep';});btn.className='ep on-'+est;renderCards();toast('Estado actualizado','ok');}
 function saveFieldInp(inp){var cid=inp.dataset.cid,clientId=inp.dataset.clid,field=inp.dataset.field,val=inp.value;var c=(DB.clients[cid]||[]).find(function(x){return x.id===clientId;});if(!c)return;c[field]=val;saveDB();clearTimeout(window._sft);window._sft=setTimeout(function(){saveCtoSB(c,cid);},800);if(field==='telefono'&&val.length>=7){var sp=document.getElementById('dial-sp');if(sp)sp.outerHTML='<a href="tel:'+val+'" class="btn-dial">📲</a>';}}
@@ -1368,7 +1368,7 @@ function importData(data,status){
   clients.forEach(function(nc){var idx=ex.findIndex(function(e){return e.nombre===nc.nombre;});if(idx>=0){var kept={estado:ex[idx].estado,telefono:ex[idx].telefono,direccion:ex[idx].direccion,kbCol:ex[idx].kbCol,kbComments:ex[idx].kbComments};ex[idx]=Object.assign({},ex[idx],nc,kept);ac++;}else{ex.push(nc);nv++;}});
   saveDB();
   var i2=0,batchSize=50;
-  function uploadBatch(){if(i2>=ex.length){if(status)status.innerHTML='<span style="color:var(--green);font-weight:600;">✅ '+nv+' nuevos, '+ac+' actualizados</span>';toast(clients.length+' clientes importados en '+(DB.carteras.find(function(c){return c.id===cid;})||{name:cid}).name,'ok');return;}var batch=ex.slice(i2,i2+batchSize).map(function(c){return{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',payments:c.payments||[]};});sbUp('clientes',batch).then(function(){i2+=batchSize;uploadBatch();});}
+  function uploadBatch(){if(i2>=ex.length){if(status)status.innerHTML='<span style="color:var(--green);font-weight:600;">✅ '+nv+' nuevos, '+ac+' actualizados</span>';toast(clients.length+' clientes importados en '+(DB.carteras.find(function(c){return c.id===cid;})||{name:cid}).name,'ok');return;}var batch=ex.slice(i2,i2+batchSize).map(function(c){return{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',};});sbUp('clientes',batch).then(function(){i2+=batchSize;uploadBatch();});}
   uploadBatch();
 }
 
@@ -1795,7 +1795,7 @@ setInterval(function(){
   if(kbModal||anyModal)return;
   // Don't reset search - use reRenderCurrent instead of goTo
   loadFromSB().then(reRenderCurrent);
-},30000);
+},300000);
 
 var _rtChannel=null,_rtRetry=null;
 function connectRealtime(){
@@ -1859,6 +1859,40 @@ window.addEventListener('DOMContentLoaded',function(){
     }
   }).catch(function(){}).finally(function(){initLogin();});
 });
+
+// ── Pagos lazy load desde tabla separada ──────────────────────────────────
+function loadPagos(clienteId){
+  var wrap=document.getElementById('pay-list-wrap');
+  var stl=document.getElementById('pay-stl');
+  if(!wrap)return;
+  sbF('pagos','GET',null,'?cliente_id=eq.'+clienteId+'&order=fecha.desc&limit=50')
+    .then(function(rows){
+      if(!rows||!rows.length){
+        wrap.innerHTML='<div style="font-size:12px;color:var(--t3);padding:8px 0;">Sin pagos registrados.</div>';
+        return;
+      }
+      var filtP=activeYear==='todos'?rows:rows.filter(function(p){
+        if(!p.fecha)return false;
+        var pt=p.fecha.split('/');
+        return pt.length===3&&pt[2]===activeYear;
+      });
+      if(stl)stl.textContent='💰 Pagos ('+filtP.length+')';
+      var h='<div class="pay-list">';
+      filtP.slice(0,20).forEach(function(p){
+        h+='<div class="pay-row">'+
+          '<span class="pay-date">'+(p.fecha||'')+'</span>'+
+          '<span class="pay-forma">'+(p.forma||'')+'</span>'+
+          '<span class="pay-amt">L '+(parseFloat(p.monto)||0).toLocaleString('es-HN',{maximumFractionDigits:0})+'</span>'+
+          '</div>';
+      });
+      h+='</div>';
+      wrap.innerHTML=h;
+    })
+    .catch(function(){
+      wrap.innerHTML='<div style="font-size:12px;color:var(--red);">Error cargando pagos.</div>';
+    });
+}
+
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 </body>
