@@ -328,7 +328,7 @@ button{cursor:pointer}
 <script>
 var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='sb_publishable_7O5xAYXC5H_OrYmTykIgyQ_hR3IkvCg';
 var WA_URL=localStorage.getItem('wa_url')||'https://tassel-wasting-cesarean.ngrok-free.dev';
-var waConvs=[],waActivePhone=null,waFilter='todos',waPollingTimer=null,waPendingMasivo=[];
+var waConvs=[],waActivePhone=null,waFilter='todos',waEmpresaFilt='todas',waPollingTimer=null,waPendingMasivo=[],_waConvsLoaded=false;
 function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':m==='POST'?'resolution=merge-duplicates':''},...(b?{body:JSON.stringify(b)}:{})}).then(function(r){if(!r.ok)return null;return(m||'GET')==='GET'?r.json():true;}).catch(function(){return null;});}
 function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
@@ -499,6 +499,15 @@ var KB={
     {id:'ncr',name:'En credito',color:'#38b2ac',bg:'#e6fffa'},
     {id:'nv',name:'Vendido',color:'#48bb78',bg:'#f0fff4'},
     {id:'np',name:'Perdido',color:'#fc8181',bg:'#fff5f5'}
+  ]},
+  facebook:{id:'facebook',name:'Facebook / Publicidad',cols:[
+    {id:'nl',name:'Lead nuevo',color:'#1877F2',bg:'#e7f0fd'},
+    {id:'nc',name:'Contactado',color:'#5b8dee',bg:'#ebf2ff'},
+    {id:'ni2',name:'Interesado',color:'#ed8936',bg:'#fffaf0'},
+    {id:'nn',name:'Negociando',color:'#9f7aea',bg:'#faf5ff'},
+    {id:'ncr',name:'En credito',color:'#38b2ac',bg:'#e6fffa'},
+    {id:'nv',name:'Vendido',color:'#48bb78',bg:'#f0fff4'},
+    {id:'np',name:'Perdido',color:'#fc8181',bg:'#fff5f5'}
   ]}
 };
 function score(c){
@@ -609,7 +618,7 @@ function goTo(view){
   var pc=document.getElementById('pcontent');
   if(view==='dashboard'){pc.innerHTML=vDash();renderDashCharts();}
   else if(view==='clientes'){pc.innerHTML=vClientes();renderCards();}
-  else if(view==='kanban'){pc.innerHTML=vKanban();renderKanban();}
+  else if(view==='kanban'){pc.innerHTML=vKanban();if(!_waConvsLoaded){waRefreshConvs(function(){renderKanban();});}else{renderKanban();}}
   else if(view==='seguimiento'){pc.innerHTML=vSeg();renderSeg();}
   else if(view==='subir'){pc.innerHTML=vSubir();initUpload();}
   else if(view==='equipo'){pc.innerHTML=vEquipo();}else if(view==='monitor'){pc.innerHTML=vMonitor();initMonitor();}
@@ -982,7 +991,7 @@ function renderDashCharts(){
 
 function vKanban(){
   var isA=CU.role!=='vendedor';
-  var h='<div class="filter-row" style="margin-bottom:14px;"><button class="ytab '+(activeBoard==='recompra'?'on':'')+'" data-b="recompra" onclick="switchBoard(this)">📋 Recompra</button><button class="ytab '+(activeBoard==='nuevos'?'on':'')+'" data-b="nuevos" onclick="switchBoard(this)">✨ Clientes Nuevos</button></div>';
+  var h='<div class="filter-row" style="margin-bottom:14px;"><button class="ytab '+(activeBoard==='recompra'?'on':'')+'" data-b="recompra" onclick="switchBoard(this)">📋 Recompra</button><button class="ytab '+(activeBoard==='nuevos'?'on':'')+'" data-b="nuevos" onclick="switchBoard(this)">✨ Clientes Nuevos</button><button class="ytab '+(activeBoard==='facebook'?'on':'')+'" data-b="facebook" onclick="switchBoard(this)">📣 Facebook/Pub.</button></div>';
   if(isA){h+=buildCartPills(kbActiveCart,'setKbCart','cp-kb');h+=buildVendPills(kbSelVend,'setKbVend','vp-kb',kbActiveCart);}
   else if(CU.role==='vendedor'){
     var vendCarts=DB.carteras.filter(function(c){return getCarterasVend().indexOf(c.id)>=0;});
@@ -994,7 +1003,7 @@ function vKanban(){
   }
   h+='<div id="kb-content"></div>';
   h+='<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">';
-  if(activeBoard==='nuevos')h+='<button class="btn-p" style="font-size:13px;padding:10px 18px;" onclick="openAddLead()">✨ Agregar cliente nuevo</button>';
+  if(activeBoard==='nuevos'||activeBoard==='facebook')h+='<button class="btn-p" style="font-size:13px;padding:10px 18px;" onclick="openAddLead()">'+(activeBoard==='facebook'?'📣 Agregar de Facebook':'✨ Agregar cliente nuevo')+'</button>';
   h+='<button class="btn-s" style="font-size:13px;padding:10px 18px;" onclick="exportKbExcel()">📥 Exportar Excel</button></div>';
   return h;
 }
@@ -1004,7 +1013,12 @@ function setKbVend(v,el){kbSelVend=v;document.querySelectorAll('#vp-kb .ytab').f
 function renderKanban(){
   var kbc=document.getElementById('kb-content');if(!kbc)return;
   var board=KB[activeBoard];var pool,cids,colField,defCol;
-  if(activeBoard==='nuevos'){
+  if(activeBoard==='facebook'){
+    pool=(DB.newLeads||[]).filter(function(l){var f=(l.fuente||'').toLowerCase();return f.includes('facebook')||f.includes('fb')||f.includes('publicidad')||f.includes('pub');});
+    var _fbVend=kbSelVend||(CU.role==='vendedor'?CU.name:null);
+    if(_fbVend)pool=pool.filter(function(l){return(l.createdBy||'').trim().toLowerCase()===_fbVend.trim().toLowerCase();});
+    cids=[];colField='leadCol';defCol='nl';
+  } else if(activeBoard==='nuevos'){
     pool=DB.newLeads||[];
     var _leadVend=kbSelVend||(CU.role==='vendedor'?CU.name:null);
     if(_leadVend)pool=pool.filter(function(l){return(l.createdBy||'').trim().toLowerCase()===_leadVend.trim().toLowerCase();});
@@ -1033,7 +1047,7 @@ function renderKanban(){
   }
   var colMap={};board.cols.forEach(function(col){colMap[col.id]=[];});
   pool.forEach(function(c){var cid2=c[colField]||defCol;if(!colMap[cid2])cid2=defCol;colMap[cid2].push(c);});
-  var isLead=activeBoard==='nuevos';
+  var isLead=activeBoard==='nuevos'||activeBoard==='facebook';
   var h='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero</div><div class="kanban-wrap"><div class="kanban-board">';
   board.cols.forEach(function(col){
     var cc=colMap[col.id]||[];
@@ -1054,6 +1068,8 @@ function renderKanban(){
       if(!isLead&&c.antiguedad)h+='<div class="kb-card-sub">'+( c.antiguedad||0)+'m · L '+fmt(c.montoTotal||0)+'</div>';
       if(lastCom)h+='<div class="kb-card-note">💬 '+lastCom.fecha.split(' ')[0]+' — '+lastCom.texto.slice(0,40)+'</div>';
       else if(lc)h+='<div class="kb-card-note">'+lc.resultado.replace(/-/g,' ')+'</div>';
+      var _waC=c.telefono?waConvs.find(function(wc){return wc.telefono===c.telefono;}):null;
+      if(_waC){var _waColors={interesado:'#276749',no_interesado:'#c53030',enviado:'#2b6cb0',pregunta:'#c05621',entrante:'#553c9a'};var _waLabels={interesado:'✅ Interesado',no_interesado:'❌ Caída',enviado:'📤 Enviado',pregunta:'❓ Pregunta',entrante:'📩 Nuevo'};var _waCl=_waColors[_waC.estado]||'#718096';var _waLb=_waLabels[_waC.estado]||_waC.estado;h+='<div style="margin-top:5px;padding:4px 7px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;font-size:10px;display:flex;align-items:center;gap:4px;overflow:hidden;cursor:pointer;" onclick="event.stopPropagation();goTo(\'whatsapp\');setTimeout(function(){waOpenConv(\''+c.telefono.replace(/'/g,"\\'")+'\')}  ,400)">'+'<span style="flex-shrink:0;">💬</span><span style="color:'+_waCl+';font-weight:700;flex-shrink:0;">'+_waLb+'</span>'+(_waC.ultimo_mensaje?'<span style="color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"> · '+(_waC.ultimo_mensaje||'').slice(0,22)+'</span>':'')+'</div>';}
       h+='</div>';
     });
     h+='</div></div>';
@@ -1068,7 +1084,7 @@ function regActividad(tipo,nombreCliente,carteraId,detalle){if(!CU||!CU.id||!CU.
 function kbDrop(e,el){
   e.preventDefault();el.classList.remove('drag-over');if(!dragClient)return;
   var colId=el.dataset.col,field=el.dataset.field||'kbCol';
-  if(dragClient.isLead){var l=(DB.newLeads||[]).find(function(x){return x.id===dragClient.id;});if(l){l[field]=colId;saveDB();saveLeadToSB(l);var cn=(KB.nuevos.cols.find(function(x){return x.id===colId;})||{name:colId}).name;regActividad('kanban-lead',l.nombre,'leads','→ '+cn);renderKanban();toast(l.nombre+' → '+cn,'ok');}}
+  if(dragClient.isLead){var l=(DB.newLeads||[]).find(function(x){return x.id===dragClient.id;});if(l){l[field]=colId;saveDB();saveLeadToSB(l);var _brd=activeBoard==='facebook'?KB.facebook:KB.nuevos;var cn=(_brd.cols.find(function(x){return x.id===colId;})||{name:colId}).name;regActividad('kanban-lead',l.nombre,'leads','→ '+cn);renderKanban();toast(l.nombre+' → '+cn,'ok');}}
   else{var c=(DB.clients[dragClient.cid]||[]).find(function(x){return x.id===dragClient.id;});if(c){c[field]=colId;saveDB();saveCtoSB(c,dragClient.cid);var cn2=(KB.recompra.cols.find(function(x){return x.id===colId;})||{name:colId}).name;regActividad('kanban-recompra',c.nombre,dragClient.cid,'→ '+cn2);renderKanban();toast(c.nombre+' → '+cn2,'ok');}}
   dragClient=null;
 }
@@ -1207,6 +1223,7 @@ function openAddLead(){
   var lb2=document.createElement('label');lb2.style.cssText='display:block;font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;margin-bottom:5px;';lb2.textContent='📱 Fuente';
   var sel=document.createElement('select');sel.style.cssText='width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#f7f9fc;cursor:pointer;';
   ['WhatsApp','Facebook','Instagram','Referido','Otro'].forEach(function(o){var op=document.createElement('option');op.textContent=o;sel.appendChild(op);});
+  if(activeBoard==='facebook')sel.value='Facebook';
   fd2.appendChild(lb2);fd2.appendChild(sel);body.appendChild(fd2);
   var sb=document.createElement('button');sb.style.cssText='width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(91,141,238,.3);';sb.textContent='✨ Agregar cliente nuevo';
   sb.onclick=function(){
@@ -1223,8 +1240,9 @@ function exportKbExcel(){
   // Columnas optimizadas para Google Contactos
   rows.push(['Nombre','Celular','Producto','Comentario','Estatus']);
 
-  if(activeBoard==='nuevos'){
-    (DB.newLeads||[]).forEach(function(l){
+  if(activeBoard==='nuevos'||activeBoard==='facebook'){
+    var _leadsExp=activeBoard==='facebook'?(DB.newLeads||[]).filter(function(l){var f=(l.fuente||'').toLowerCase();return f.includes('facebook')||f.includes('fb')||f.includes('publicidad')||f.includes('pub');}):DB.newLeads||[];
+    _leadsExp.forEach(function(l){
       var lastC=(l.kbComments||[]).slice(-1)[0];
       var col=board.cols.find(function(c){return c.id===(l.leadCol||'nl');})||{name:'Lead nuevo'};
       var comentario=lastC?(lastC.fecha+' '+lastC.autor+': '+lastC.texto):(l.notas||'');
@@ -1265,7 +1283,7 @@ function exportKbExcel(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;
-  a.download='LaRoca_'+(activeBoard==='nuevos'?'Leads':'Recompra')+'_'+new Date().toLocaleDateString('es-HN').replace(/\//g,'-')+'.csv';
+  a.download='LaRoca_'+(activeBoard==='nuevos'?'Leads':activeBoard==='facebook'?'Facebook':'Recompra')+'_'+new Date().toLocaleDateString('es-HN').replace(/\//g,'-')+'.csv';
   a.click();
   URL.revokeObjectURL(url);
   toast('Descargado — '+(rows.length-1)+' contactos','ok');
@@ -1935,6 +1953,13 @@ function vWhatsApp(){
   '<div class="wa-wrap" id="wa-wrap">'+
   '<div class="wa-side" id="wa-side">'+
   '<div class="wa-side-hdr"><input class="srch" id="wa-srch" placeholder="Buscar cliente..." oninput="waRenderList()" style="width:100%;max-width:none;"/></div>'+
+  '<div class="wa-filt" id="wa-filt-emp" style="border-bottom:1px solid var(--border);padding-bottom:4px;">'+
+  '<button class="ytab on" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'todas\')">Todas</button>'+
+  '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'La Roca\')">La Roca</button>'+
+  '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'La Roca Motors\')">Motors</button>'+
+  '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'Su Mueble\')">Mueble</button>'+
+  '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'Su Moto\')">Moto</button>'+
+  '</div>'+
   '<div class="wa-filt" id="wa-filt">'+
   '<button class="ytab on" onclick="waFilt(this,\'todos\')">Todos</button>'+
   '<button class="ytab" onclick="waFilt(this,\'interesado\')">✅ Interesados</button>'+
@@ -1948,7 +1973,7 @@ function vWhatsApp(){
 }
 
 function waInit(){
-  waActivePhone=null;waFilter='todos';
+  waActivePhone=null;waFilter='todos';waEmpresaFilt='todas';
   waLoadConvs();
   if(waPollingTimer)clearInterval(waPollingTimer);
   waPollingTimer=setInterval(function(){
@@ -1960,16 +1985,29 @@ function waInit(){
 
 function waH(){return{'ngrok-skip-browser-warning':'true','Content-Type':'application/json'};}
 
+function waRefreshConvs(cb){
+  fetch(WA_URL+'/api/conversaciones',{headers:{'ngrok-skip-browser-warning':'true'}})
+  .then(function(r){return r.json();})
+  .then(function(d){waConvs=d||[];_waConvsLoaded=true;if(cb)cb();})
+  .catch(function(){_waConvsLoaded=true;if(cb)cb();});
+}
+
 function waLoadConvs(){
   fetch(WA_URL+'/api/conversaciones',{headers:{'ngrok-skip-browser-warning':'true'}})
   .then(function(r){return r.json();})
-  .then(function(d){waConvs=d||[];waRenderList();})
+  .then(function(d){waConvs=d||[];_waConvsLoaded=true;waRenderList();})
   .catch(function(){var l=document.getElementById('wa-list');if(l)l.innerHTML='<div class="empty-st"><div class="ei">⚠️</div>Sin conexión al backend</div>';});
 }
 
 function waFilt(el,f){
   waFilter=f;
   document.querySelectorAll('#wa-filt .ytab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');waRenderList();
+}
+
+function waFiltEmp(el,e){
+  waEmpresaFilt=e;
+  document.querySelectorAll('#wa-filt-emp .ytab').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');waRenderList();
 }
 
@@ -1980,7 +2018,9 @@ function waRenderList(){
   var srch=((document.getElementById('wa-srch')||{}).value||'').toLowerCase();
   var l=document.getElementById('wa-list');if(!l)return;
   var f=waConvs.filter(function(c){
-    return(waFilter==='todos'||c.estado===waFilter)&&(!srch||(c.nombre||'').toLowerCase().includes(srch)||(c.telefono||'').includes(srch));
+    return(waFilter==='todos'||c.estado===waFilter)
+      &&(waEmpresaFilt==='todas'||(c.empresa||'')=== waEmpresaFilt)
+      &&(!srch||(c.nombre||'').toLowerCase().includes(srch)||(c.telefono||'').includes(srch));
   });
   if(!f.length){l.innerHTML='<div class="empty-st"><div class="ei">💬</div>Sin conversaciones</div>';return;}
   l.innerHTML=f.map(function(c){
