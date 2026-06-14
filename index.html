@@ -2072,12 +2072,24 @@ function waSend(){
 
 function waUploadImg(input,tel){
   if(!input.files||!input.files[0])return;
-  var fd=new FormData();fd.append('imagen',input.files[0]);fd.append('telefono',tel);
-  toast('Subiendo imagen...','');
-  fetch(WA_URL+'/api/enviar-imagen',{method:'POST',headers:{'ngrok-skip-browser-warning':'true'},body:fd})
-  .then(function(r){return r.json();})
-  .then(function(){toast('Imagen enviada','ok');waLoadMessages(tel);waLoadConvs();})
-  .catch(function(){toast('Error al enviar imagen','err');});
+  var file=input.files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var base64=e.target.result.split(',')[1];
+    toast('Subiendo imagen...','');
+    fetch(WA_URL+'/api/enviar-imagen',{
+      method:'POST',
+      headers:waH(),
+      body:JSON.stringify({telefono:tel,imagen:base64,tipo:file.type,nombre:file.name})
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){toast('Imagen enviada ✅','ok');waLoadMessages(tel);waLoadConvs();}
+      else{toast('Error: '+(d.error||'desconocido'),'err');console.error(d);}
+    })
+    .catch(function(e){toast('Error al enviar imagen','err');console.error(e);});
+  };
+  reader.readAsDataURL(file);
   input.value='';
 }
 
