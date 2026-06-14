@@ -2077,16 +2077,21 @@ function waUploadImg(input,tel){
   reader.onload=function(e){
     var base64=e.target.result.split(',')[1];
     toast('Subiendo imagen...','');
-    fetch(WA_URL+'/api/enviar-imagen',{
-      method:'POST',
-      headers:waH(),
-      body:JSON.stringify({telefono:tel,imagen:base64,tipo:file.type,nombre:file.name})
-    })
+    var fd=new FormData();
+    fd.append('key','06b70a968773c7633233c9888d5afbcb');
+    fd.append('image',base64);
+    fetch('https://api.imgbb.com/1/upload',{method:'POST',body:fd})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.ok){toast('Imagen enviada ✅','ok');waLoadMessages(tel);waLoadConvs();}
-      else{toast('Error: '+(d.error||'desconocido'),'err');console.error(d);}
+      if(!d.success)throw new Error('imgbb: '+(d.error?.message||'error'));
+      var mediaUrl=d.data.url;
+      return fetch(WA_URL+'/api/enviar-imagen-url',{
+        method:'POST',headers:waH(),
+        body:JSON.stringify({telefono:tel,mediaUrl:mediaUrl})
+      });
     })
+    .then(function(r){return r.json();})
+    .then(function(){toast('Imagen enviada ✅','ok');waLoadMessages(tel);waLoadConvs();})
     .catch(function(e){toast('Error al enviar imagen','err');console.error(e);});
   };
   reader.readAsDataURL(file);
