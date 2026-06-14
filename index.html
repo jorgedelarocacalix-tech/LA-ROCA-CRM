@@ -2051,7 +2051,10 @@ function waLoadMessages(tel){
       var out=m.direccion==='saliente';
       var t=new Date(m.timestamp).toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});
       var body='';
-      if(m.media_url)body+='<img src="'+m.media_url+'" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;"/>';
+      if(m.media_url){
+        var imgSrc=m.media_url.includes('twilio.com')?WA_URL+'/api/media-proxy?url='+encodeURIComponent(m.media_url):m.media_url;
+        body+='<img src="'+imgSrc+'" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;" />';
+      }
       body+=(m.contenido||'');
       return '<div class="wa-bubble '+(out?'out':'in')+'">'+body+'<div class="wa-btime">'+t+'</div></div>';
     }).join('');
