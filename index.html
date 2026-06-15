@@ -496,7 +496,7 @@ var KB={
     {id:'nc',name:'Contactado',color:'#5b8dee',bg:'#ebf2ff'},
     {id:'ni2',name:'Interesado',color:'#ed8936',bg:'#fffaf0'},
     {id:'nn',name:'Negociando',color:'#9f7aea',bg:'#faf5ff'},
-    {id:'ncr',name:'En credito',color:'#38b2ac',bg:'#e6fffa'},
+    {id:'ncr',name:'Con cuenta activa',color:'#38b2ac',bg:'#e6fffa'},
     {id:'nv',name:'Vendido',color:'#48bb78',bg:'#f0fff4'},
     {id:'np',name:'Perdido',color:'#fc8181',bg:'#fff5f5'}
   ]},
@@ -505,7 +505,7 @@ var KB={
     {id:'nc',name:'Contactado',color:'#5b8dee',bg:'#ebf2ff'},
     {id:'ni2',name:'Interesado',color:'#ed8936',bg:'#fffaf0'},
     {id:'nn',name:'Negociando',color:'#9f7aea',bg:'#faf5ff'},
-    {id:'ncr',name:'En credito',color:'#38b2ac',bg:'#e6fffa'},
+    {id:'ncr',name:'Con cuenta activa',color:'#38b2ac',bg:'#e6fffa'},
     {id:'nv',name:'Vendido',color:'#48bb78',bg:'#f0fff4'},
     {id:'np',name:'Perdido',color:'#fc8181',bg:'#fff5f5'}
   ]}
@@ -975,23 +975,22 @@ function buildVendTable(cids){
   });
   if(!rows.length)return '';
   rows.sort(function(a,b){return b.sem-a.sem;});
-  var h='<div style="margin-bottom:20px;">';
-  h+='<div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">🏆 Rendimiento del equipo</div>';
-  h+='<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);">';
-  h+='<div style="display:grid;grid-template-columns:1fr 80px 80px 70px 70px 70px 90px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;padding:10px 16px;border-bottom:1px solid var(--border);letter-spacing:.05em;">';
-  h+='<div>Vendedor</div><div style="text-align:center;">Hoy</div><div style="text-align:center;">7 días</div><div style="text-align:center;">Leads</div><div style="text-align:center;">Cerrados</div><div style="text-align:center;">Conv%</div><div style="text-align:center;">Último activo</div></div>';
+  var h='<div style="margin-bottom:18px;">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">🏆 Rendimiento del equipo — todas las carteras</div>';
+  h+='<div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);">';
+  h+='<div style="display:grid;grid-template-columns:1fr 52px 52px 52px 52px 80px;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;padding:7px 12px;border-bottom:1px solid var(--border);letter-spacing:.04em;">';
+  h+='<div>Vendedor</div><div style="text-align:center;">Hoy</div><div style="text-align:center;">7d</div><div style="text-align:center;">Leads</div><div style="text-align:center;">Conv%</div><div style="text-align:center;">Activo</div></div>';
   rows.forEach(function(r,i){
     var dago=r.last?(Math.round((new Date(monFechaHN(0)+'T12:00:00Z')-new Date(r.last+'T12:00:00Z'))/86400000)):999;
-    var lastTxt=dago===0?'<span style="color:#48bb78;font-weight:700;">Hoy</span>':dago===1?'<span style="color:#48bb78;">Ayer</span>':dago<=4?'<span style="color:#ed8936;">Hace '+dago+'d</span>':'<span style="color:#fc8181;">Hace '+dago+'d</span>';
-    var pctColor=r.pct>=40?'#48bb78':r.pct>=20?'#ed8936':'#fc8181';
-    h+='<div onclick="setDashVend(\''+r.name+'\',document.querySelector(\'[data-vend=\\"'+r.name+'\\"]\'))" style="display:grid;grid-template-columns:1fr 80px 80px 70px 70px 70px 90px;padding:11px 16px;border-bottom:'+(i<rows.length-1?'1px solid var(--border)':'none')+';align-items:center;cursor:pointer;transition:background .12s;" onmouseenter="this.style.background=\'#f7f9fc\'" onmouseleave="this.style.background=\'\'">';
-    h+='<div style="font-size:13px;font-weight:600;color:var(--t1);">👤 '+r.name+'</div>';
-    h+='<div style="text-align:center;font-size:14px;font-weight:700;color:'+(r.hoy>0?'var(--blue)':'var(--t3)')+';">'+r.hoy+'</div>';
-    h+='<div style="text-align:center;font-size:14px;font-weight:700;color:var(--t1);">'+r.sem+'</div>';
-    h+='<div style="text-align:center;font-size:14px;color:var(--t2);">'+r.leads+'</div>';
-    h+='<div style="text-align:center;font-size:14px;font-weight:600;color:#48bb78;">'+r.cerrados+'</div>';
-    h+='<div style="text-align:center;font-size:13px;font-weight:700;color:'+pctColor+';">'+r.pct+'%</div>';
-    h+='<div style="text-align:center;font-size:12px;">'+lastTxt+'</div>';
+    var lastTxt=dago===0?'<span style="color:#48bb78;font-weight:700;">Hoy</span>':dago===1?'<span style="color:#48bb78;">Ayer</span>':dago<=4?'<span style="color:#ed8936;">Hace '+dago+'d</span>':'<span style="color:#fc8181;">'+dago+'d</span>';
+    var pctColor=r.pct>=40?'#48bb78':r.pct>=20?'#ed8936':'#a0aec0';
+    h+='<div onclick="setDashVend(\''+r.name+'\',null)" style="display:grid;grid-template-columns:1fr 52px 52px 52px 52px 80px;padding:8px 12px;border-bottom:'+(i<rows.length-1?'1px solid var(--border)':'none')+';align-items:center;cursor:pointer;transition:background .12s;" onmouseenter="this.style.background=\'#f7f9fc\'" onmouseleave="this.style.background=\'\'">';
+    h+='<div style="font-size:12px;font-weight:600;color:var(--t1);">'+r.name+'</div>';
+    h+='<div style="text-align:center;font-size:13px;font-weight:700;color:'+(r.hoy>0?'var(--blue)':'var(--t3)')+';">'+r.hoy+'</div>';
+    h+='<div style="text-align:center;font-size:13px;font-weight:700;color:var(--t1);">'+r.sem+'</div>';
+    h+='<div style="text-align:center;font-size:13px;color:var(--t2);">'+r.leads+'</div>';
+    h+='<div style="text-align:center;font-size:12px;font-weight:700;color:'+pctColor+';">'+r.pct+'%</div>';
+    h+='<div style="text-align:center;font-size:11px;">'+lastTxt+'</div>';
     h+='</div>';
   });
   h+='</div></div>';
@@ -1001,7 +1000,7 @@ function buildVendTable(cids){
 function vDash(){
   var isA=CU.role!=='vendedor';
   var cartH=isA?buildCartPills(dashCart,'setDashCart','cp-dash'):'';
-  var vendH=isA?buildVendPills(dashSelVend,'setDashVend','vp-dash',dashCart):'';
+  var vendH=isA?buildVendPills(dashSelVend,'setDashVend','vp-dash',dashCart,{}):'';
   var tabBar='<div class="filter-row" style="margin-bottom:18px;">'+
     '<button class="ytab '+(activeDash==='todos'?'on':'')+'" data-tab="todos" onclick="setDashTab(this)">🌐 Todos</button>'+
     '<button class="ytab '+(activeDash==='recompra'?'on':'')+'" data-tab="recompra" onclick="setDashTab(this)">📋 Recompra</button>'+
@@ -1081,7 +1080,8 @@ function vDash(){
   }
   pipeH+='</div>';
 
-  var tableH=isA&&!dashSelVend?buildVendTable(cids):'';
+  var allCids=DB.carteras.map(function(x){return x.id;});
+  var tableH=isA&&!dashSelVend?buildVendTable(allCids):'';
 
   var chartsH='<div class="ch2">';
   chartsH+='<div class="chart-card"><div class="chart-ttl">📞 Actividad del equipo — últimos 7 días</div><canvas id="ch-vend" height="'+(Math.max(160,cids.length*20+60))+'"></canvas></div>';
