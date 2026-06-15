@@ -1315,6 +1315,14 @@ function buildAnalisisDashHTML(){
   var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var fd=new Date(hoy+'T12:00:00Z');
   var fechaTxt=fd.getUTCDate()+' de '+meses[fd.getUTCMonth()]+' '+fd.getUTCFullYear();
+  // Sin análisis los domingos
+  if(fd.getUTCDay()===0){
+    return '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;color:var(--t3);">'+
+      '<div style="font-size:24px;margin-bottom:8px;">🌅</div>'+
+      '<div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px;">Es domingo — día de descanso</div>'+
+      '<div style="font-size:12px;">El análisis del equipo se genera de lunes a sábado.</div>'+
+      '</div>';
+  }
   // No dedup global — cada pool ve sus propios usuarios (Alejandra puede aparecer en roca1 Y roca2 con carteras distintas)
   var allVendors=DB.users.filter(function(u){
     return (u.role==='vendedor'||u.role==='subadmin')&&u.name&&
@@ -1468,6 +1476,8 @@ function renderDashCharts(){
 
 function _buildVendorDayPanel(){
   var hoy=monFechaHN(0);
+  var fd=new Date(hoy+'T12:00:00Z');
+  if(fd.getUTCDay()===0)return '';
   var vn=CU.name.trim();
   var vCarts=getCarterasVend();
   var pool=null;
