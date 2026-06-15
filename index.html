@@ -328,7 +328,7 @@ button{cursor:pointer}
 <script>
 var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='sb_publishable_7O5xAYXC5H_OrYmTykIgyQ_hR3IkvCg';
 var WA_URL=localStorage.getItem('wa_url')||'https://tassel-wasting-cesarean.ngrok-free.dev';
-var waConvs=[],waActivePhone=null,waFilter='todos',waEmpresaFilt='todas',waPollingTimer=null,waPendingMasivo=[],_waConvsLoaded=false;
+var waConvs=[],waActivePhone=null,waActiveCanal='whatsapp',waFilter='todos',waEmpresaFilt='todas',waCanalFilt='todos',waPollingTimer=null,waPendingMasivo=[],_waConvsLoaded=false;
 function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':m==='POST'?'resolution=merge-duplicates':''},...(b?{body:JSON.stringify(b)}:{})}).then(function(r){if(!r.ok)return null;return(m||'GET')==='GET'?r.json():true;}).catch(function(){return null;});}
 function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
@@ -2608,6 +2608,11 @@ function vWhatsApp(){
   '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'Su Mueble\')">Mueble</button>'+
   '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'Su Moto\')">Moto</button>'+
   '</div>'+
+  '<div class="wa-filt" id="wa-filt-canal" style="border-bottom:1px solid var(--border);padding-bottom:4px;">'+
+  '<button class="ytab on" style="font-size:11px;padding:4px 9px;" onclick="waFiltCanal(this,\'todos\')">Todos</button>'+
+  '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltCanal(this,\'whatsapp\')">📱 WhatsApp</button>'+
+  '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltCanal(this,\'messenger\')">📘 Messenger</button>'+
+  '</div>'+
   '<div class="wa-filt" id="wa-filt">'+
   '<button class="ytab on" onclick="waFilt(this,\'todos\')">Todos</button>'+
   '<button class="ytab" onclick="waFilt(this,\'interesado\')">✅ Interesados</button>'+
@@ -2658,6 +2663,11 @@ function waFiltEmp(el,e){
   document.querySelectorAll('#wa-filt-emp .ytab').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');waRenderList();
 }
+function waFiltCanal(el,c){
+  waCanalFilt=c;
+  document.querySelectorAll('#wa-filt-canal .ytab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');waRenderList();
+}
 
 var _waStMap={interesado:'wa-st-interesado',no_interesado:'wa-st-no_interesado',enviado:'wa-st-enviado',pregunta:'wa-st-pregunta'};
 var _waStLbl={interesado:'✅ Interesado',no_interesado:'❌ Caída',enviado:'📤 Enviado',pregunta:'❓ Pregunta'};
@@ -2668,16 +2678,21 @@ function waRenderList(){
   var f=waConvs.filter(function(c){
     return(waFilter==='todos'||c.estado===waFilter)
       &&(waEmpresaFilt==='todas'||(c.empresa||'')=== waEmpresaFilt)
+      &&(waCanalFilt==='todos'||(c.canal||'whatsapp')===waCanalFilt)
       &&(!srch||(c.nombre||'').toLowerCase().includes(srch)||(c.telefono||'').includes(srch));
   });
   if(!f.length){l.innerHTML='<div class="empty-st"><div class="ei">💬</div>Sin conversaciones</div>';return;}
   l.innerHTML=f.map(function(c){
     var init=(c.nombre||c.telefono||'?')[0];
     var sc=_waStMap[c.estado]||'';var sl=_waStLbl[c.estado]||'';
-    return '<div class="wa-ci'+(c.telefono===waActivePhone?' on':'')+'" onclick="waOpenConv(\''+c.telefono.replace(/\\/g,'\\\\').replace(/'/g,'\\\'')+'\')">'
-    +'<div class="wa-ci-av">'+init+'</div>'
+    var esMessenger=(c.canal==='messenger');
+    var canalBadge=esMessenger?'<span style="font-size:9px;background:#1877f222;color:#1877f2;padding:1px 5px;border-radius:6px;font-weight:700;flex-shrink:0;">📘 FB</span>':'';
+    var safeT=(c.telefono||'').replace(/\\/g,'\\\\').replace(/'/g,'\\\'');
+    return '<div class="wa-ci'+(c.telefono===waActivePhone?' on':'')+'" onclick="waOpenConv(\''+safeT+'\')">'
+    +'<div class="wa-ci-av" style="'+(esMessenger?'background:#1877f2;color:#fff;':'')+'">'+init+'</div>'
     +'<div class="wa-ci-info">'
     +'<div class="wa-ci-nm"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(c.nombre||c.telefono)+'</span>'
+    +canalBadge
     +(sc?'<span class="wa-stbadge '+sc+'">'+sl+'</span>':'')
     +'</div>'
     +'<div class="wa-ci-msg">'+(c.ultimo_mensaje||'')+'</div>'
@@ -2691,25 +2706,37 @@ function waOpenConv(tel){
   waRenderList();
   var conv=waConvs.find(function(c){return c.telefono===tel;})||{};
   var nombre=conv.nombre||tel;var empresa=conv.empresa||'';
+  waActiveCanal=conv.canal||'whatsapp';
+  var esMessenger=waActiveCanal==='messenger';
   var panel=document.getElementById('wa-chat');if(!panel)return;
   var safeT=tel.replace(/\\/g,'\\\\').replace(/'/g,'\\\'');
+  var canalLabel=esMessenger
+    ?'<span style="font-size:10px;background:#1877f2;color:#fff;padding:2px 7px;border-radius:6px;font-weight:700;margin-left:6px;">📘 Messenger</span>'
+    :'<span style="font-size:10px;background:#25D366;color:#fff;padding:2px 7px;border-radius:6px;font-weight:700;margin-left:6px;">📱 WhatsApp</span>';
+  var inputBar=esMessenger
+    ? '<div class="wa-inp-bar">'
+      +'<textarea class="wa-inp" id="wa-inp" placeholder="Responder por Messenger..." rows="1" '
+      +'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();waSend();}"></textarea>'
+      +'<button class="wa-btn-rnd wa-btn-send" style="background:#1877f2;" onclick="waSend()">➤</button>'
+      +'</div>'
+    : '<div class="wa-inp-bar">'
+      +'<label class="wa-btn-rnd wa-btn-img" style="border:1.5px solid var(--border);cursor:pointer;" title="Enviar imagen">'
+      +'<input type="file" accept="image/*" style="display:none" onchange="waUploadImg(this,\''+safeT+'\')" />📎</label>'
+      +'<textarea class="wa-inp" id="wa-inp" placeholder="Escribe un mensaje..." rows="1" '
+      +'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();waSend();}"></textarea>'
+      +'<button class="wa-btn-rnd wa-btn-send" onclick="waSend()">➤</button>'
+      +'</div>';
   panel.innerHTML=
   '<div class="wa-chat-hdr">'
-  +'<div class="wa-chat-av">'+(nombre[0]||'?')+'</div>'
+  +'<div class="wa-chat-av" style="'+(esMessenger?'background:#1877f2;color:#fff;':'')+'">'+( nombre[0]||'?')+'</div>'
   +'<div style="flex:1;min-width:0;">'
-  +'<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nombre+'</div>'
-  +'<div style="font-size:11px;color:var(--t2);">'+empresa+(empresa?' · ':'')+tel+'</div>'
+  +'<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;">'+nombre+canalLabel+'</div>'
+  +'<div style="font-size:11px;color:var(--t2);">'+empresa+(empresa?' · ':'')+( esMessenger?'Facebook Messenger':tel)+'</div>'
   +'</div></div>'
   +'<div id="wa-ia-rec" style="display:none;padding:10px 16px;background:#fffbeb;border-bottom:1.5px solid #fbd38d;font-size:12px;color:#7b341e;display:flex;gap:8px;align-items:flex-start;">'
   +'<span style="font-size:16px;flex-shrink:0;">🤖</span><span id="wa-ia-txt">Analizando conversación...</span></div>'
   +'<div class="wa-msgs" id="wa-msgs"><div class="empty-st"><div class="ei">⏳</div></div></div>'
-  +'<div class="wa-inp-bar">'
-  +'<label class="wa-btn-rnd wa-btn-img" style="border:1.5px solid var(--border);cursor:pointer;" title="Enviar imagen">'
-  +'<input type="file" accept="image/*" style="display:none" onchange="waUploadImg(this,\''+safeT+'\')" />📎</label>'
-  +'<textarea class="wa-inp" id="wa-inp" placeholder="Escribe un mensaje..." rows="1" '
-  +'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();waSend();}"></textarea>'
-  +'<button class="wa-btn-rnd wa-btn-send" onclick="waSend()">➤</button>'
-  +'</div>';
+  +inputBar;
   waLoadMessages(tel);
   waCargarRecomendacion(tel);
 }
@@ -2756,9 +2783,16 @@ function waSend(){
   if(!inp||!waActivePhone)return;
   var msg=inp.value.trim();if(!msg)return;
   inp.value='';
-  fetch(WA_URL+'/api/responder',{method:'POST',headers:waH(),body:JSON.stringify({telefono:waActivePhone,mensaje:msg})})
-  .then(function(){waLoadMessages(waActivePhone);waLoadConvs();})
-  .catch(function(){toast('Error al enviar','err');});
+  var conv=waConvs.find(function(c){return c.telefono===waActivePhone;})||{};
+  if((conv.canal||'whatsapp')==='messenger'&&conv.messenger_id){
+    fetch(WA_URL+'/api/responder-messenger',{method:'POST',headers:waH(),body:JSON.stringify({messenger_id:conv.messenger_id,mensaje:msg})})
+    .then(function(){waLoadMessages(waActivePhone);waLoadConvs();})
+    .catch(function(){toast('Error al enviar por Messenger','err');});
+  } else {
+    fetch(WA_URL+'/api/responder',{method:'POST',headers:waH(),body:JSON.stringify({telefono:waActivePhone,mensaje:msg})})
+    .then(function(){waLoadMessages(waActivePhone);waLoadConvs();})
+    .catch(function(){toast('Error al enviar','err');});
+  }
 }
 
 function waUploadImg(input,tel){
