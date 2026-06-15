@@ -334,7 +334,7 @@ function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
 function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',payments:c.payments||[]});}
 function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
-function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null});}
+function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null,assigned_to:l.assignedTo||null,lead_cartera:l.leadCartera||null});}
 function loadFromSB(){
   // Fetch all pages from Supabase (max 1000 per page)
   function fetchAll(table,query){
@@ -405,7 +405,7 @@ function loadFromSB(){
         }
       }
     }
-    if(ld.length){DB.newLeads=ld.map(function(l){return{id:l.id,nombre:l.nombre,telefono:l.telefono||'',fechaContacto:l.fecha_contacto||'',fuente:l.fuente||'',producto:l.producto||'',notas:l.notas||'',leadCol:l.lead_col||'nl',kbComments:l.kb_comments||[],createdBy:l.created_by||'',createdAt:l.created_at||''};});}
+    if(ld.length){DB.newLeads=ld.map(function(l){return{id:l.id,nombre:l.nombre,telefono:l.telefono||'',fechaContacto:l.fecha_contacto||'',fuente:l.fuente||'',producto:l.producto||'',notas:l.notas||'',leadCol:l.lead_col||'nl',kbComments:l.kb_comments||[],createdBy:l.created_by||'',createdAt:l.created_at||'',assignedTo:l.assigned_to||'',leadCartera:l.lead_cartera||''};});}
     saveDB();
   }).catch(function(e){console.error('SB:',e);});}
 
@@ -510,6 +510,41 @@ var KB={
     {id:'np',name:'Perdido',color:'#fc8181',bg:'#fff5f5'}
   ]}
 };
+// Pools de vendedores por grupo de empresas
+var VENDOR_POOLS=[
+  {id:'pool_roca1',label:'La Roca + Roca Motors 1',carteras:['roca1','roca1motors']},
+  {id:'pool_roca2',label:'Roca Motors 2',carteras:['roca2motors']},
+  {id:'pool_mueble',label:'Su Mueble + Su Moto',carteras:['sumuebledanli','sumotodanli']}
+];
+function getPoolByCartera(cartId){for(var i=0;i<VENDOR_POOLS.length;i++){if(VENDOR_POOLS[i].carteras.indexOf(cartId)>=0)return VENDOR_POOLS[i];}return null;}
+function getPoolById(pid){return VENDOR_POOLS.find(function(p){return p.id===pid;})||null;}
+function getRRState(){try{return JSON.parse(localStorage.getItem('rr_st')||'{}');}catch(e){return{};}}
+function setRRState(st){localStorage.setItem('rr_st',JSON.stringify(st));}
+function getActiveVendorsForPool(pool){
+  if(!pool)return[];
+  var cutoff=new Date();cutoff.setDate(cutoff.getDate()-45);
+  var cutStr=cutoff.toISOString().slice(0,10);
+  var activeNames=new Set(DB.calls.filter(function(c){return(c.dateISO||'')>=cutStr;}).map(function(c){return(c.userName||'').trim().toLowerCase();}));
+  return DB.users.filter(function(u){
+    if(u.role!=='vendedor')return false;
+    var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
+    return uc.some(function(c){return pool.carteras.indexOf(c)>=0;})&&activeNames.has((u.name||'').trim().toLowerCase());
+  });
+}
+function assignNextVendor(pool){
+  var vendors=getActiveVendorsForPool(pool);
+  if(!vendors.length)return null;
+  var st=getRRState();
+  var last=st[pool.id]||'';
+  var lastIdx=-1;
+  for(var i=0;i<vendors.length;i++){if(vendors[i].name===last){lastIdx=i;break;}}
+  var nextIdx=(lastIdx+1)%vendors.length;
+  var v=vendors[nextIdx];
+  st[pool.id]=v.name;
+  setRRState(st);
+  return v;
+}
+
 function score(c){
   var s=50,rsns=[],pays=c.payments||[],byM={};
   if(!pays.length&&(c.totalPagos||0)>0){var s=50,rsns=[];var tp=c.totalPagos||0,ant=parseFloat(c.antiguedad)||0,mt=c.montoTotal||0,pat=c.patron||'Mensual';if(pat==='Doble'){s+=20;rsns.push({ic:'✅',tx:'Patrón doble pago',pt:20});}else{rsns.push({ic:'—',tx:'Patrón mensual',pt:0});}if(ant>=24){s+=15;rsns.push({ic:'✅',tx:Math.round(ant)+'m antigüedad',pt:15});}else if(ant>=12){s+=8;rsns.push({ic:'✅',tx:Math.round(ant)+'m antigüedad',pt:8});}else if(ant<3){s-=5;rsns.push({ic:'⚠️',tx:'Cliente reciente',pt:-5});}var cons=tp/Math.max(1,Math.round(ant));if(cons>=1.5){s+=15;rsns.push({ic:'✅',tx:'Alta frecuencia de pago',pt:15});}else if(cons>=0.85){s+=12;rsns.push({ic:'✅',tx:'Pagó consistentemente',pt:12});}else if(cons<0.4&&ant>3){s-=15;rsns.push({ic:'❌',tx:'Baja frecuencia',pt:-15});}else if(cons<0.6&&ant>3){s-=7;rsns.push({ic:'⚠️',tx:'Frecuencia irregular',pt:-7});}if(mt>50000){s+=10;rsns.push({ic:'✅',tx:'L '+mt.toLocaleString()+' pagados',pt:10});}else if(mt>20000){s+=5;rsns.push({ic:'✅',tx:'L '+mt.toLocaleString()+' pagados',pt:5});}if(tp>=10){s+=5;rsns.push({ic:'✅',tx:tp+' pagos registrados',pt:5});}else if(tp<=2){s-=10;rsns.push({ic:'⚠️',tx:'Muy pocos pagos',pt:-10});}s=Math.max(0,Math.min(100,s));var cat='ri',lbl='Riesgoso',ic='🔴';if(s>=80){cat='ex';lbl='Excelente';ic='⭐';}else if(s>=60){cat='bu';lbl='Bueno';ic='👍';}else if(s>=40){cat='re';lbl='Regular';ic='⚠️';}return{s:s,cat:cat,lbl:lbl,ic:ic,rsns:rsns};}
@@ -1002,12 +1037,44 @@ function vKanban(){
     }
   }
   h+='<div id="kb-content"></div>';
+  if((activeBoard==='nuevos'||activeBoard==='facebook')&&(CU.role==='admin'||CU.role==='subadmin'))h+=buildRRPanel();
   h+='<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">';
   if(activeBoard==='nuevos'||activeBoard==='facebook')h+='<button class="btn-p" style="font-size:13px;padding:10px 18px;" onclick="openAddLead()">'+(activeBoard==='facebook'?'📣 Agregar de Facebook':'✨ Agregar cliente nuevo')+'</button>';
   h+='<button class="btn-s" style="font-size:13px;padding:10px 18px;" onclick="exportKbExcel()">📥 Exportar Excel</button></div>';
   return h;
 }
 function switchBoard(el){activeBoard=el.dataset.b;kbSelVend=null;goTo('kanban');}
+function buildRRPanel(){
+  var h='<div style="margin-top:14px;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">⚡ Rotación de asignación (Round-Robin)</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+  var st=getRRState();
+  VENDOR_POOLS.forEach(function(pool){
+    var vendors=getActiveVendorsForPool(pool);
+    var last=st[pool.id]||'';
+    var lastIdx=-1;for(var i=0;i<vendors.length;i++){if(vendors[i].name===last){lastIdx=i;break;}}
+    var nextIdx=(lastIdx+1)%Math.max(1,vendors.length);
+    // Count leads per vendor
+    var counts={};(DB.newLeads||[]).filter(function(l){return pool.carteras.indexOf(l.leadCartera||'')>=0;}).forEach(function(l){var k=l.assignedTo||'Sin asignar';counts[k]=(counts[k]||0)+1;});
+    h+='<div style="flex:1;min-width:180px;background:#f7f9fc;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;">';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px;">'+pool.label+'</div>';
+    if(!vendors.length){h+='<div style="font-size:11px;color:#c53030;">Sin vendedores activos</div>';}
+    else{
+      vendors.forEach(function(v,i){
+        var isNext=i===nextIdx;
+        var cnt=counts[v.name]||0;
+        h+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #edf2f7;font-size:12px;">';
+        h+=(isNext?'<span style="font-size:10px;background:#d6f5e0;color:#276749;border-radius:4px;padding:1px 5px;font-weight:700;">→ NEXT</span>':'<span style="font-size:10px;color:var(--t3);padding:0 4px;">·</span>');
+        h+='<span style="flex:1;font-weight:'+(isNext?'700':'400')+';">'+v.name+'</span>';
+        h+='<span style="font-size:10px;color:var(--t2);background:#edf2f7;border-radius:10px;padding:1px 7px;">'+cnt+' leads</span>';
+        h+='</div>';
+      });
+    }
+    h+='</div>';
+  });
+  h+='</div></div>';
+  return h;
+}
 function setKbCart(id,el){kbActiveCart=id;kbSelVend=null;document.querySelectorAll('#cp-kb .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderKanban();}
 function setKbVend(v,el){kbSelVend=v;document.querySelectorAll('#vp-kb .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderKanban();}
 function renderKanban(){
@@ -1016,12 +1083,12 @@ function renderKanban(){
   if(activeBoard==='facebook'){
     pool=(DB.newLeads||[]).filter(function(l){var f=(l.fuente||'').toLowerCase();return f.includes('facebook')||f.includes('fb')||f.includes('publicidad')||f.includes('pub');});
     var _fbVend=kbSelVend||(CU.role==='vendedor'?CU.name:null);
-    if(_fbVend)pool=pool.filter(function(l){return(l.createdBy||'').trim().toLowerCase()===_fbVend.trim().toLowerCase();});
+    if(_fbVend)pool=pool.filter(function(l){return(l.assignedTo||l.createdBy||'').trim().toLowerCase()===_fbVend.trim().toLowerCase();});
     cids=[];colField='leadCol';defCol='nl';
   } else if(activeBoard==='nuevos'){
     pool=DB.newLeads||[];
     var _leadVend=kbSelVend||(CU.role==='vendedor'?CU.name:null);
-    if(_leadVend)pool=pool.filter(function(l){return(l.createdBy||'').trim().toLowerCase()===_leadVend.trim().toLowerCase();});
+    if(_leadVend)pool=pool.filter(function(l){return(l.assignedTo||l.createdBy||'').trim().toLowerCase()===_leadVend.trim().toLowerCase();});
     cids=[];colField='leadCol';defCol='nl';
   } else {
     cids=kbActiveCart?[kbActiveCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
@@ -1065,6 +1132,8 @@ function renderKanban(){
       h+='<div class="kb-card-name">'+c.nombre+'</div>';
       if(c.telefono)h+='<div class="kb-card-tel">📞 '+c.telefono+'</div>';
       if(c.fuente)h+='<div class="kb-card-sub" style="color:var(--blue);">'+c.fuente+'</div>';
+      if(isLead&&c.assignedTo)h+='<div style="font-size:10px;font-weight:700;color:#6b46c1;margin-top:2px;">👤 '+c.assignedTo+'</div>';
+      else if(isLead)h+='<div style="font-size:10px;color:#a0aec0;margin-top:2px;">👤 Sin asignar</div>';
       if(!isLead&&c.antiguedad)h+='<div class="kb-card-sub">'+( c.antiguedad||0)+'m · L '+fmt(c.montoTotal||0)+'</div>';
       if(lastCom)h+='<div class="kb-card-note">💬 '+lastCom.fecha.split(' ')[0]+' — '+lastCom.texto.slice(0,40)+'</div>';
       else if(lc)h+='<div class="kb-card-note">'+lc.resultado.replace(/-/g,' ')+'</div>';
@@ -1219,18 +1288,42 @@ function openAddLead(){
     ip.onfocus=function(){this.style.borderColor='var(--blue)';};ip.onblur=function(){this.style.borderColor='#e2e8f0';};
     inp[f[1]]=ip;d.appendChild(lb);d.appendChild(ip);body.appendChild(d);
   });
-  var fd2=document.createElement('div');fd2.style.marginBottom='16px';
+  // Fuente
+  var fd2=document.createElement('div');fd2.style.marginBottom='12px';
   var lb2=document.createElement('label');lb2.style.cssText='display:block;font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;margin-bottom:5px;';lb2.textContent='📱 Fuente';
   var sel=document.createElement('select');sel.style.cssText='width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#f7f9fc;cursor:pointer;';
   ['WhatsApp','Facebook','Instagram','Referido','Otro'].forEach(function(o){var op=document.createElement('option');op.textContent=o;sel.appendChild(op);});
   if(activeBoard==='facebook')sel.value='Facebook';
   fd2.appendChild(lb2);fd2.appendChild(sel);body.appendChild(fd2);
-  var sb=document.createElement('button');sb.style.cssText='width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(91,141,238,.3);';sb.textContent='✨ Agregar cliente nuevo';
+  // Empresa / Pool (determina qué vendedores reciben el lead)
+  var fdEmp=document.createElement('div');fdEmp.style.marginBottom='12px';
+  var lbEmp=document.createElement('label');lbEmp.style.cssText='display:block;font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;margin-bottom:5px;';lbEmp.textContent='🏪 Para qué empresa';
+  var selEmp=document.createElement('select');selEmp.style.cssText='width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#f7f9fc;cursor:pointer;';
+  var _empOps=[{v:'pool_roca1',l:'La Roca + Roca Motors 1'},{v:'pool_roca2',l:'Roca Motors 2'},{v:'pool_mueble',l:'Su Mueble + Su Moto'}];
+  _empOps.forEach(function(o){var op=document.createElement('option');op.value=o.v;op.textContent=o.l;selEmp.appendChild(op);});
+  fdEmp.appendChild(lbEmp);fdEmp.appendChild(selEmp);body.appendChild(fdEmp);
+  // Preview de quién recibirá este lead
+  var prevDiv=document.createElement('div');prevDiv.style.cssText='padding:10px 14px;background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:10px;font-size:12px;color:#276749;margin-bottom:16px;display:flex;align-items:center;gap:8px;';
+  function updatePreview(){
+    var pool=getPoolById(selEmp.value);
+    var vendors=pool?getActiveVendorsForPool(pool):[];
+    var st=getRRState();var last=pool?st[pool.id]||'':'';
+    var lastIdx=-1;if(vendors.length){for(var i=0;i<vendors.length;i++){if(vendors[i].name===last){lastIdx=i;break;}}}
+    var nextIdx=(lastIdx+1)%Math.max(1,vendors.length);
+    var nextV=vendors.length?vendors[nextIdx]:null;
+    prevDiv.innerHTML='<span style="font-size:16px;">👤</span><span>'+(nextV?'Se asignará a <strong>'+nextV.name+'</strong> ('+vendors.length+' vendedor'+(vendors.length>1?'es':'')+' activo'+(vendors.length>1?'s':'')+')':'<span style="color:#c53030;">Sin vendedores activos en este pool — se guardará sin asignar</span>')+'</span>';
+  }
+  selEmp.onchange=updatePreview;updatePreview();
+  body.appendChild(prevDiv);
+  var sb=document.createElement('button');sb.style.cssText='width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(91,141,238,.3);';sb.textContent='✨ Agregar y asignar';
   sb.onclick=function(){
     var nombre=inp['nombre'].value.trim();if(!nombre){toast('Ingresa el nombre','err');inp['nombre'].focus();return;}
     if(!DB.newLeads)DB.newLeads=[];
-    var newLead={id:'lead_'+Date.now(),nombre:nombre,telefono:inp['telefono'].value,fechaContacto:inp['fechaContacto'].value,fuente:sel.value,producto:inp['producto'].value,leadCol:'nl',kbComments:[],createdBy:CU.name,createdAt:new Date().toLocaleDateString('es-HN')};
-    DB.newLeads.push(newLead);saveDB();saveLeadToSB(newLead);regActividad('lead-nuevo',nombre,'leads',sel.value);ov.remove();renderKanban();toast(nombre+' agregado','ok');
+    var pool=getPoolById(selEmp.value);
+    var assigned=pool?assignNextVendor(pool):null;
+    var repCartera=pool?pool.carteras[0]:'';
+    var newLead={id:'lead_'+Date.now(),nombre:nombre,telefono:inp['telefono'].value,fechaContacto:inp['fechaContacto'].value,fuente:sel.value,producto:inp['producto'].value,leadCol:'nl',kbComments:[],createdBy:CU.name,createdAt:new Date().toLocaleDateString('es-HN'),assignedTo:assigned?assigned.name:'',leadCartera:repCartera};
+    DB.newLeads.push(newLead);saveDB();saveLeadToSB(newLead);regActividad('lead-nuevo',nombre,'leads',sel.value+(assigned?' → '+assigned.name:''));ov.remove();renderKanban();toast(nombre+' agregado'+(assigned?' → '+assigned.name:'')+(assigned?'':'  (sin asignar — agrega vendedores activos)'),'ok');
   };
   body.appendChild(sb);box.appendChild(hdr);box.appendChild(body);ov.appendChild(box);document.body.appendChild(ov);
 }
