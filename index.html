@@ -487,7 +487,7 @@ var KB={
     {id:'contactado',name:'Contactado',color:'#5b8dee',bg:'#ebf2ff'},
     {id:'interesado',name:'Interesado',color:'#ed8936',bg:'#fffaf0'},
     {id:'negociando',name:'Negociando',color:'#9f7aea',bg:'#faf5ff'},
-    {id:'credito',name:'En credito',color:'#38b2ac',bg:'#e6fffa'},
+    {id:'credito',name:'Con cuenta activa',color:'#38b2ac',bg:'#e6fffa'},
     {id:'vendido',name:'Vendido',color:'#48bb78',bg:'#f0fff4'},
     {id:'perdido',name:'Perdido',color:'#fc8181',bg:'#fff5f5'}
   ]},
@@ -1088,7 +1088,75 @@ function vDash(){
   if(showNuevos)chartsH+='<div class="chart-card"><div class="chart-ttl">🎯 Embudo de Leads</div><canvas id="ch-kb2" height="220"></canvas></div>';
   chartsH+='</div>';
 
-  return cartH+vendH+tabBar+pulseH+kpiH+pipeH+tableH+chartsH;
+  // Análisis diario para gerentes
+  var reporteH='';
+  if(isA){
+    var rLines=buildReporteDia();
+    reporteH='<div style="margin-bottom:20px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">📋 Reporte diario para gerentes</div>'
+      +'<div style="background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);">'
+      +'<textarea id="dash-reporte" readonly style="width:100%;min-height:180px;border:none;background:transparent;font-family:monospace;font-size:12px;color:var(--t1);resize:vertical;outline:none;line-height:1.6;">'+rLines+'</textarea>'
+      +'<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'
+      +'<button onclick="dashCopiarReporte()" style="background:var(--blue);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">📋 Copiar</button>'
+      +'<button onclick="dashCompartirReporte()" style="background:#25D366;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">📤 WhatsApp</button>'
+      +'<button onclick="dashRefreshReporte()" style="background:none;border:1.5px solid var(--border);color:var(--t2);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;">🔄 Actualizar</button>'
+      +'</div></div></div>';
+  }
+
+  return cartH+vendH+tabBar+pulseH+kpiH+pipeH+tableH+chartsH+reporteH;
+}
+
+function buildReporteDia(){
+  var hoy=monFechaHN(0);
+  var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var fd=new Date(hoy+'T12:00:00Z');
+  var fechaTxt=fd.getUTCDate()+' de '+meses[fd.getUTCMonth()]+' '+fd.getUTCFullYear();
+  var lines=['📊 Reporte diario — '+fechaTxt,''];
+  var totalHoy=0;
+  DB.carteras.forEach(function(car){
+    var callsHoy=DB.calls.filter(function(c){return c.carteraId===car.id&&c.dateISO===hoy;});
+    if(!callsHoy.length)return;
+    totalHoy+=callsHoy.length;
+    var byVend={};
+    callsHoy.forEach(function(c){
+      var k=(c.userName||c.userId||'').trim();if(!k)return;
+      if(!byVend[k])byVend[k]={gest:0,cli:new Set()};
+      byVend[k].gest++;if(c.clientId)byVend[k].cli.add(c.clientId);
+    });
+    var uCli=new Set(callsHoy.map(function(c){return c.clientId;}).filter(Boolean));
+    lines.push('🏪 '+car.name+': '+callsHoy.length+' gestiones · '+uCli.size+' clientes');
+    Object.keys(byVend).sort(function(a,b){return byVend[b].gest-byVend[a].gest;}).forEach(function(name){
+      lines.push('   › '+name+': '+byVend[name].gest+' gestiones ('+byVend[name].cli.size+' clientes únicos)');
+    });
+    lines.push('');
+  });
+  if(!totalHoy){lines.push('Sin actividad registrada hoy.');lines.push('');}
+  // Leads nuevos hoy
+  var leadsH=(DB.newLeads||[]).filter(function(l){return(l.createdAt||'').startsWith(hoy);});
+  if(leadsH.length){lines.push('✨ Leads nuevos hoy: '+leadsH.length);lines.push('');}
+  // Pipeline calientes
+  var cidsAll=DB.carteras.map(function(x){return x.id;});
+  var calR=0,calN=0;
+  cidsAll.forEach(function(cid){(DB.clients[cid]||[]).forEach(function(c){if(c.kbCol==='interesado'||c.kbCol==='negociando')calR++;});});
+  if(DB.newLeads)(DB.newLeads).forEach(function(l){if(l.leadCol==='ni2'||l.leadCol==='nn')calN++;});
+  if(calR+calN>0){lines.push('🔥 Prospectos calientes: '+calR+' recompra + '+calN+' leads');lines.push('');}
+  lines.push('─────────────────────');
+  lines.push('📞 Total gestiones hoy: '+totalHoy);
+  return lines.join('\n');
+}
+
+function dashCopiarReporte(){
+  var ta=document.getElementById('dash-reporte');if(!ta)return;
+  navigator.clipboard.writeText(ta.value).then(function(){toast('Reporte copiado al portapapeles','ok');}).catch(function(){ta.select();document.execCommand('copy');toast('Reporte copiado','ok');});
+}
+function dashCompartirReporte(){
+  var ta=document.getElementById('dash-reporte');if(!ta)return;
+  if(navigator.share){navigator.share({text:ta.value}).catch(function(){});}
+  else{window.open('https://wa.me/?text='+encodeURIComponent(ta.value),'_blank');}
+}
+function dashRefreshReporte(){
+  var ta=document.getElementById('dash-reporte');if(!ta)return;
+  ta.value=buildReporteDia();toast('Reporte actualizado','ok');
 }
 
 
