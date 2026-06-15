@@ -1142,17 +1142,16 @@ function _vendStats(vn,hoy,poolCarteras){
 }
 
 function _buildPoolTxt(pool,hoy,fechaTxt){
-  var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   var fd=new Date(hoy+'T12:00:00Z');
-  var lines=['📊 '+pool.label+' — '+dias[fd.getUTCDay()]+' '+fechaTxt,''];
+  var META=8;
+  var lines=['📊 ANÁLISIS — '+pool.label,'📅 '+dias[fd.getUTCDay()]+', '+fechaTxt,''];
+
+  // Recopilar stats de todos los vendedores del pool (dedup por nombre)
   var seen=new Set();
-  // Organizar por cartera dentro del pool
+  var allStats=[];
   pool.carteras.forEach(function(cid){
-    var car=DB.carteras.find(function(x){return x.id===cid;});
-    if(!car)return;
-    // Vendors cuya primera cartera de este pool es esta — dedup dentro del filter
-    var carVendors=DB.users.filter(function(u){
+    DB.users.filter(function(u){
       if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
       if(!u.name)return false;
       var k=u.name.trim().toLowerCase();
@@ -1162,49 +1161,128 @@ function _buildPoolTxt(pool,hoy,fechaTxt){
       if(firstPool!==cid)return false;
       seen.add(k);
       return true;
-    });
-    if(!carVendors.length)return;
-    lines.push('🏪 '+car.name+':');
-    carVendors.forEach(function(u){
-      var st=_vendStats(u.name.trim(),hoy,pool.carteras);
-      var statusIcon=st.callsHoy>0?'✅':st.dago<=6?'🟡':'🔴';
-      var statusTxt=st.callsHoy>0?(st.callsHoy+' gestiones hoy · '+st.calls7d+' esta semana'):
-        (st.dago>=999?'nunca ha ingresado':'sin actividad hace '+st.dago+' días');
-      var avgTxt=st.avgPerDia>0?' · ~'+st.avgPerDia+' clientes/día'+(st.avgPerDia<8?' ⚠️ (meta: 8)':''):'';
-      var line='   👤 '+st.name+': '+statusIcon+' '+statusTxt+avgTxt;
-      if(st.totalLeads)line+=' | leads '+st.leadsCerrados+'/'+st.totalLeads;
-      lines.push(line);
-      // Prospectos parados
-      st.estancados.forEach(function(e){
-        lines.push('      ⚠️ '+e.nombre+' ('+e.etapa+' · '+e.dias+' días sin gestión)');
-        lines.push('         📌 '+e.accion);
-      });
-    });
-    lines.push('');
+    }).forEach(function(u){allStats.push(_vendStats(u.name.trim(),hoy,pool.carteras));});
   });
-  // Resumen de pendientes urgentes (máx 5)
-  var urgentes=[];
-  var uNameSeen=new Set();
+  if(!allStats.length)return lines.join('\n');
+
+  // Pipeline del pool
+  var totalInteresado=0,totalNegociando=0;
   pool.carteras.forEach(function(cid){
-    DB.users.filter(function(u){
-      if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
-      var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-      return uc.indexOf(cid)>=0;
-    }).forEach(function(u){
-      var k=u.name.trim().toLowerCase();
-      if(uNameSeen.has(k))return;
-      uNameSeen.add(k);
-      var st=_vendStats(u.name.trim(),hoy,pool.carteras);
-      if(st.dago>6)urgentes.push('🔴 '+st.name+' — '+(st.dago>=999?'nunca ha ingresado':st.dago+' días sin actividad'));
-      st.estancados.filter(function(e){return e.dias>=5;}).forEach(function(e){
-        urgentes.push('⚠️ '+st.name+' → '+e.nombre+' ('+e.dias+' días) — '+e.accion);
-      });
+    (DB.clients[cid]||[]).forEach(function(c){
+      if(c.kbCol==='interesado')totalInteresado++;
+      else if(c.kbCol==='negociando')totalNegociando++;
     });
   });
-  var uSeen=new Set();
-  urgentes=urgentes.filter(function(u){if(uSeen.has(u))return false;uSeen.add(u);return true;}).slice(0,5);
-  if(urgentes.length){lines.push('📌 Pendientes urgentes:');urgentes.forEach(function(u){lines.push('   · '+u);});}
-  else lines.push('✅ Sin pendientes urgentes');
+
+  // Situación general del equipo
+  var activos=allStats.filter(function(r){return r.callsHoy>0;});
+  var inactivos=allStats.filter(function(r){return r.callsHoy===0&&r.dago<999;});
+  var nuncaEnt=allStats.filter(function(r){return r.dago>=999&&r.callsHoy===0;});
+  var avgEquipo=allStats.length?+(allStats.reduce(function(s,r){return s+r.avgPerDia;},0)/allStats.length).toFixed(1):0;
+  var pctMeta=Math.round((avgEquipo/META)*100);
+
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push('📈 RENDIMIENTO DEL EQUIPO');
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+  if(activos.length===allStats.length){
+    lines.push('✅ Todo el equipo activo hoy ('+activos.length+' vendedor'+(activos.length>1?'es':'')+').');
+  } else if(activos.length===0){
+    lines.push('🔴 NINGÚN vendedor ha registrado gestiones hoy.');
+  } else {
+    lines.push('⚠️ '+activos.length+' de '+allStats.length+' vendedores activos hoy.');
+    if(inactivos.length)lines.push('   Sin actividad hoy: '+inactivos.map(function(r){return r.name;}).join(', ')+'.');
+  }
+  lines.push('');
+  lines.push('Promedio del equipo: '+avgEquipo+' clientes/día (meta: '+META+') — '+pctMeta+'% de la meta.');
+  if(avgEquipo<META){
+    var faltanTotal=allStats.reduce(function(s,r){return s+(META-Math.max(r.avgPerDia,0));},0);
+    var faltanPorVend=+(faltanTotal/allStats.length).toFixed(1);
+    lines.push('Para llegar a la meta, cada vendedor necesita agregar ~'+faltanPorVend+' contactos más por día.');
+  } else {
+    lines.push('🏆 ¡El equipo está cumpliendo la meta de '+META+' clientes/día!');
+  }
+  lines.push('');
+
+  // Análisis por vendedor
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push('👥 SITUACIÓN POR VENDEDOR');
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+  allStats.sort(function(a,b){return b.avgPerDia-a.avgPerDia;}).forEach(function(st){
+    var icon=st.callsHoy>0?'✅':(st.dago>=999?'⛔':'🔴');
+    lines.push('');
+    if(st.dago>=999){
+      lines.push(icon+' '+st.name+': Nunca ha registrado gestiones.');
+      lines.push('   → Acción: Verificar que esté usando el sistema correctamente.');
+      return;
+    }
+    if(st.callsHoy===0){
+      lines.push(icon+' '+st.name+': Sin actividad hoy. Lleva '+st.dago+' días sin gestiones.');
+      if(st.dago>=3)lines.push('   → URGENTE: Contactar para saber qué está pasando y retomar hoy mismo.');
+      else lines.push('   → Recordar que la meta es '+META+' clientes diarios.');
+    } else {
+      lines.push(icon+' '+st.name+': '+st.callsHoy+' gestiones hoy · '+st.calls7d+' esta semana · promedio '+st.avgPerDia+'/día.');
+      if(st.avgPerDia>=META){
+        lines.push('   → ¡Cumpliendo la meta! Mantener el ritmo y enfocarse en cierres.');
+      } else {
+        var falta=+(META-st.avgPerDia).toFixed(1);
+        lines.push('   → Está '+falta+' contactos/día por debajo de la meta. Agregar un bloque extra de llamadas.');
+      }
+    }
+    if(st.estancados.length){
+      lines.push('   Prospectos parados ('+st.estancados.length+'):');
+      st.estancados.slice(0,3).forEach(function(e){
+        var urgIcon=e.dias>=10?'🚨':e.dias>=5?'⚠️':'📌';
+        lines.push('   '+urgIcon+' '+e.nombre+' — '+e.dias+' días en '+e.etapa+'.');
+        lines.push('      → '+e.accion+'.');
+      });
+      if(st.estancados.length>3)lines.push('   ... y '+(st.estancados.length-3)+' más.');
+    }
+  });
+  lines.push('');
+
+  // Meta de ventas basada en pipeline
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+  lines.push('🎯 META DE VENTAS (PIPELINE ACTUAL)');
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+  if(totalInteresado+totalNegociando>0){
+    var cierresEst=Math.round(totalNegociando*0.55+totalInteresado*0.25);
+    lines.push('Pipeline activo: '+totalNegociando+' en negociación + '+totalInteresado+' interesados.');
+    lines.push('Cierres estimados esta semana: '+cierresEst+(cierresEst===1?' venta':' ventas')+' (basado en tasas normales de conversión).');
+    if(totalNegociando>0){
+      lines.push('Prioridad #1: Los '+totalNegociando+' en negociación están listos para cerrar — no dejarlos enfriar.');
+    }
+    if(totalInteresado>0){
+      lines.push('Prioridad #2: Convertir interesados a negociando: agendar visita o llamada concreta esta semana.');
+    }
+    if(cierresEst===0){
+      lines.push('⚠️ Sin pipeline suficiente. Hay que generar prospectos nuevos urgentemente.');
+    }
+  } else {
+    lines.push('⚠️ Sin prospectos activos en el pipeline.');
+    lines.push('Acción inmediata: El equipo debe prospectar clientes nuevos y reactivar base de datos.');
+  }
+  lines.push('');
+
+  // Plan de acción concreto
+  var acciones=[];
+  allStats.forEach(function(st){
+    if(st.dago>=999)acciones.push('Verificar con '+st.name+' que esté usando el sistema.');
+    else if(st.dago>=3&&st.callsHoy===0)acciones.push('Llamar a '+st.name+' hoy — lleva '+st.dago+' días sin actividad.');
+    st.estancados.filter(function(e){return e.dias>=7;}).slice(0,2).forEach(function(e){
+      acciones.push(st.name+': '+e.accion.toLowerCase().replace(/\.$/,'')+' con '+e.nombre+' ('+e.dias+' días esperando).');
+    });
+    if(st.avgPerDia>0&&st.avgPerDia<META){
+      var f=+(META-st.avgPerDia).toFixed(1);
+      if(f>=3)acciones.push(st.name+': agregar '+f+' contactos/día para cumplir la meta.');
+    }
+  });
+  acciones=acciones.slice(0,5);
+  if(acciones.length){
+    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push('📋 PLAN DE ACCIÓN — HOY');
+    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━');
+    acciones.forEach(function(a,i){lines.push((i+1)+'. '+a);});
+  }
   return lines.join('\n');
 }
 
@@ -1410,19 +1488,37 @@ function _buildVendorDayPanel(){
   h+='<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:4px;"><span>Promedio clientes/día (7 días)</span><span style="font-weight:700;color:'+barColor+';">'+st.avgPerDia+' / '+META+' meta</span></div>';
   h+='<div style="background:#e2e8f0;border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:6px;transition:width .4s;"></div></div>';
   h+='</div>';
-  // Recomendaciones personales
+  // Análisis inteligente para el vendedor
+  var META=8;
+  if(st.callsHoy===0&&st.dago>=999){
+    h+='<div style="font-size:12px;color:#e53e3e;font-weight:700;padding:8px 0;">⛔ Aún no has registrado ninguna gestión en el sistema. Empieza hoy para que el análisis muestre tu trabajo.</div>';
+  } else if(st.callsHoy===0){
+    h+='<div style="background:#fff5f5;border:1.5px solid #fed7d7;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;">';
+    h+='<div style="font-weight:700;color:#c53030;margin-bottom:4px;">🔴 No has registrado gestiones hoy.</div>';
+    h+='<div style="color:#742a2a;">La meta es '+META+' clientes contactados por día. Cada día sin gestiones aleja el cierre. Empieza ahora.</div>';
+    h+='</div>';
+  } else if(st.avgPerDia<META){
+    var falta=+(META-st.avgPerDia).toFixed(1);
+    h+='<div style="background:#fffbeb;border:1.5px solid #f6d860;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;">';
+    h+='<div style="font-weight:700;color:#744210;margin-bottom:4px;">⚠️ Estás '+falta+' contactos/día por debajo de la meta.</div>';
+    h+='<div style="color:#92400e;">Agrega un bloque de llamadas extra hoy. Con '+META+' contactos diarios, tus probabilidades de cierre aumentan significativamente.</div>';
+    h+='</div>';
+  } else {
+    h+='<div style="background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;font-weight:700;color:#276749;">🏆 ¡Cumpliendo la meta! Mantén el ritmo y enfócate en cerrar a tus prospectos en negociación.</div>';
+  }
   if(st.estancados.length){
-    h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">📌 Clientes que necesitan acción hoy</div>';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">📌 Clientes que necesitan tu acción HOY</div>';
     st.estancados.slice(0,5).forEach(function(e){
-      h+='<div style="background:#fffbeb;border:1.5px solid #f6d860;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px;">';
-      h+='<div style="font-weight:700;color:#744210;">'+e.nombre+' — '+e.dias+' días sin gestión</div>';
-      h+='<div style="color:#92400e;margin-top:2px;">📌 '+e.accion+'</div>';
+      var urgColor=e.dias>=10?'#c53030':e.dias>=5?'#744210':'#2c5282';
+      var urgBg=e.dias>=10?'#fff5f5':e.dias>=5?'#fffbeb':'#ebf8ff';
+      var urgBorder=e.dias>=10?'#fed7d7':e.dias>=5?'#f6d860':'#90cdf4';
+      h+='<div style="background:'+urgBg+';border:1.5px solid '+urgBorder+';border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px;">';
+      h+='<div style="font-weight:700;color:'+urgColor+';">'+e.nombre+(e.dias>=10?' 🚨':'')+' — '+e.dias+' días sin gestión en etapa '+e.etapa+'</div>';
+      h+='<div style="color:'+urgColor+';opacity:.85;margin-top:3px;">→ '+e.accion+'.</div>';
       h+='</div>';
     });
-  } else if(st.callsHoy===0){
-    h+='<div style="font-size:12px;color:#e53e3e;font-weight:700;">🔴 Aún no has registrado gestiones hoy. ¡Empieza ya!</div>';
-  } else {
-    h+='<div style="font-size:12px;color:#276749;font-weight:700;">✅ ¡Buen trabajo! Sin prospectos parados.</div>';
+  } else if(st.callsHoy>0){
+    h+='<div style="font-size:12px;color:#276749;font-weight:700;">✅ Sin prospectos parados. Sigue prospectando para llenar el pipeline.</div>';
   }
   h+='</div>';
   return h;
