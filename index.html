@@ -940,9 +940,66 @@ function getKbStats(cid,vend){
   return{recompra:rs,nuevos:ls};
 }
 
+function dashKpiCard(ic,lbl,val,sub,color){
+  return '<div class="sc" style="border-left:4px solid '+color+';padding:16px 20px;cursor:default;">'
+    +'<div style="font-size:24px;margin-bottom:6px;">'+ic+'</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+lbl+'</div>'
+    +'<div style="font-size:32px;font-weight:800;color:'+color+';line-height:1;">'+val+'</div>'
+    +(sub?'<div style="font-size:11px;color:var(--t3);margin-top:4px;">'+sub+'</div>':'')
+    +'</div>';
+}
+
+function buildVendTable(cids){
+  var hoy=monFechaHN(0);
+  var hace7=monFechaHN(-6);
+  var seen=new Set();
+  var vendors=DB.users.filter(function(u){
+    if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
+    if(!u.name)return false;
+    var k=u.name.trim().toLowerCase();
+    if(seen.has(k))return false;
+    seen.add(k);return true;
+  });
+  var rows=[];
+  vendors.forEach(function(v){
+    var vn=(v.name||'').trim();
+    var vCalls=DB.calls.filter(function(c){return(c.userName||'').trim().toLowerCase()===vn.toLowerCase()&&cids.includes(c.carteraId);});
+    var hoyN=vCalls.filter(function(c){return c.dateISO===hoy;}).length;
+    var sem=vCalls.filter(function(c){return(c.dateISO||'')>=hace7;}).length;
+    var leads=(DB.newLeads||[]).filter(function(l){return(l.assignedTo||l.createdBy||'').trim().toLowerCase()===vn.toLowerCase();});
+    var cerrados=leads.filter(function(l){return l.leadCol==='nv';}).length;
+    var pct=leads.length?Math.round(cerrados/leads.length*100):0;
+    var lastCall=vCalls.sort(function(a,b){return(b.dateISO||'')>(a.dateISO||'')?1:-1;})[0];
+    var last=lastCall?lastCall.dateISO:null;
+    if(hoyN>0||sem>0||leads.length>0)rows.push({name:vn,hoy:hoyN,sem:sem,leads:leads.length,cerrados:cerrados,pct:pct,last:last});
+  });
+  if(!rows.length)return '';
+  rows.sort(function(a,b){return b.sem-a.sem;});
+  var h='<div style="margin-bottom:20px;">';
+  h+='<div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">🏆 Rendimiento del equipo</div>';
+  h+='<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);">';
+  h+='<div style="display:grid;grid-template-columns:1fr 80px 80px 70px 70px 70px 90px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;padding:10px 16px;border-bottom:1px solid var(--border);letter-spacing:.05em;">';
+  h+='<div>Vendedor</div><div style="text-align:center;">Hoy</div><div style="text-align:center;">7 días</div><div style="text-align:center;">Leads</div><div style="text-align:center;">Cerrados</div><div style="text-align:center;">Conv%</div><div style="text-align:center;">Último activo</div></div>';
+  rows.forEach(function(r,i){
+    var dago=r.last?(Math.round((new Date(monFechaHN(0)+'T12:00:00Z')-new Date(r.last+'T12:00:00Z'))/86400000)):999;
+    var lastTxt=dago===0?'<span style="color:#48bb78;font-weight:700;">Hoy</span>':dago===1?'<span style="color:#48bb78;">Ayer</span>':dago<=4?'<span style="color:#ed8936;">Hace '+dago+'d</span>':'<span style="color:#fc8181;">Hace '+dago+'d</span>';
+    var pctColor=r.pct>=40?'#48bb78':r.pct>=20?'#ed8936':'#fc8181';
+    h+='<div onclick="setDashVend(\''+r.name+'\',document.querySelector(\'[data-vend=\\"'+r.name+'\\"]\'))" style="display:grid;grid-template-columns:1fr 80px 80px 70px 70px 70px 90px;padding:11px 16px;border-bottom:'+(i<rows.length-1?'1px solid var(--border)':'none')+';align-items:center;cursor:pointer;transition:background .12s;" onmouseenter="this.style.background=\'#f7f9fc\'" onmouseleave="this.style.background=\'\'">';
+    h+='<div style="font-size:13px;font-weight:600;color:var(--t1);">👤 '+r.name+'</div>';
+    h+='<div style="text-align:center;font-size:14px;font-weight:700;color:'+(r.hoy>0?'var(--blue)':'var(--t3)')+';">'+r.hoy+'</div>';
+    h+='<div style="text-align:center;font-size:14px;font-weight:700;color:var(--t1);">'+r.sem+'</div>';
+    h+='<div style="text-align:center;font-size:14px;color:var(--t2);">'+r.leads+'</div>';
+    h+='<div style="text-align:center;font-size:14px;font-weight:600;color:#48bb78;">'+r.cerrados+'</div>';
+    h+='<div style="text-align:center;font-size:13px;font-weight:700;color:'+pctColor+';">'+r.pct+'%</div>';
+    h+='<div style="text-align:center;font-size:12px;">'+lastTxt+'</div>';
+    h+='</div>';
+  });
+  h+='</div></div>';
+  return h;
+}
+
 function vDash(){
   var isA=CU.role!=='vendedor';
-  // Filters
   var cartH=isA?buildCartPills(dashCart,'setDashCart','cp-dash'):'';
   var vendH=isA?buildVendPills(dashSelVend,'setDashVend','vp-dash',dashCart):'';
   var tabBar='<div class="filter-row" style="margin-bottom:18px;">'+
@@ -950,47 +1007,94 @@ function vDash(){
     '<button class="ytab '+(activeDash==='recompra'?'on':'')+'" data-tab="recompra" onclick="setDashTab(this)">📋 Recompra</button>'+
     '<button class="ytab '+(activeDash==='nuevos'?'on':'')+'" data-tab="nuevos" onclick="setDashTab(this)">✨ Clientes Nuevos</button>'+
     '</div>';
-
-  // Get stats based on filters
   var kbs=getKbStats(dashCart,dashSelVend);
   var showRecompra=activeDash==='todos'||activeDash==='recompra';
   var showNuevos=activeDash==='todos'||activeDash==='nuevos';
+  var cids=dashCart?[dashCart]:DB.carteras.map(function(x){return x.id;});
 
-  var sgH='';
+  // KPI calculations
+  var hoy=monFechaHN(0);
+  var callsF=DB.calls.filter(function(c){
+    if(!cids.includes(c.carteraId))return false;
+    if(dashSelVend&&(c.userName||c.userId||'').trim().toLowerCase()!==dashSelVend.trim().toLowerCase())return false;
+    return true;
+  });
+  var gHoy=callsF.filter(function(c){return c.dateISO===hoy;}).length;
+  var gSem=callsF.filter(function(c){return(c.dateISO||'')>=monFechaHN(-6);}).length;
+  var calientes=(showRecompra?((kbs.recompra.interesado||0)+(kbs.recompra.negociando||0)):0)+(showNuevos?((kbs.nuevos.ni2||0)+(kbs.nuevos.nn||0)):0);
+  var leads=DB.newLeads||[];if(dashSelVend)leads=leads.filter(function(l){return(l.assignedTo||l.createdBy||'')===dashSelVend;});
+  var leadsActivos=leads.filter(function(l){return l.leadCol!=='nv'&&l.leadCol!=='np';}).length;
+  var vendidosR=showRecompra?(kbs.recompra.vendido||0):0;
+  var vendidosN=showNuevos?(kbs.nuevos.nv||0):0;
 
+  // Team pulse (compact row — only for admin, only when no vendor filter)
+  var pulseH='';
+  if(isA&&!dashSelVend){
+    var seen2=new Set();
+    var pulseVendors=DB.users.filter(function(u){
+      if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
+      if(!u.name)return false;var k=u.name.trim().toLowerCase();
+      if(seen2.has(k))return false;seen2.add(k);return true;
+    });
+    if(pulseVendors.length){
+      pulseH+='<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;box-shadow:var(--shadow);">';
+      pulseH+='<span style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-right:4px;">📡 Equipo hoy</span>';
+      pulseVendors.forEach(function(v){
+        var vn=v.name.trim();
+        var gc=DB.calls.filter(function(c){return(c.userName||'').trim().toLowerCase()===vn.toLowerCase()&&c.dateISO===hoy;}).length;
+        var lastC=DB.calls.filter(function(c){return(c.userName||'').trim().toLowerCase()===vn.toLowerCase();}).sort(function(a,b){return(b.dateISO||'')>(a.dateISO||'')?1:-1;})[0];
+        var dago=lastC?(Math.round((new Date(hoy+'T12:00:00Z')-new Date(lastC.dateISO+'T12:00:00Z'))/86400000)):999;
+        var dot=dago===0?'🟢':dago<=2?'🟡':'🔴';
+        var color=dago===0?'#48bb78':dago<=2?'#ed8936':'#fc8181';
+        pulseH+='<div onclick="goTo(\'monitor\')" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid '+color+'33;background:'+color+'11;cursor:pointer;white-space:nowrap;" title="Ver detalle de '+vn+'">';
+        pulseH+=dot+' <span style="font-size:12px;font-weight:600;color:var(--t1);">'+vn+'</span>';
+        if(gc>0)pulseH+='<span style="font-size:10px;background:'+color+';color:#fff;border-radius:10px;padding:0 6px;font-weight:700;">'+gc+'</span>';
+        pulseH+='</div>';
+      });
+      pulseH+='<button onclick="goTo(\'monitor\')" style="margin-left:auto;background:none;border:1.5px solid var(--blue);color:var(--blue);padding:5px 12px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;">Ver Monitor →</button>';
+      pulseH+='</div>';
+    }
+  }
+
+  var kpiH='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;">';
+  kpiH+=dashKpiCard('📞','Gestiones hoy',gHoy,gSem+' esta semana','#5b8dee');
+  kpiH+=dashKpiCard('🔥','Prospectos calientes',calientes,'Interesados + Negociando','#ed8936');
+  kpiH+=dashKpiCard('✨','Leads activos',leadsActivos,'Sin cerrar ni perder','#9f7aea');
+  kpiH+=dashKpiCard('🎉','Vendidos total',(vendidosR+vendidosN),'Recompra '+vendidosR+' · Nuevos '+vendidosN,'#48bb78');
+  kpiH+='</div>';
+
+  // Pipeline stages (compacto)
+  var pipeH='<div style="margin-bottom:20px;">';
   if(showRecompra){
     var rs=kbs.recompra;var board=KB.recompra;
-    var totalR=Object.values(rs).reduce(function(a,b){return a+b;},0);
-    sgH+='<div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">📋 Recompra</div>';
-    sgH+='<div class="sg" style="margin-bottom:20px;">';
-    sgH+=board.cols.map(function(col){return '<div class="sc"><div class="sc-ic">'+{prospecto:'🔵',contactado:'📞',interesado:'⭐',negociando:'💬',credito:'💳',vendido:'🎉',perdido:'❌'}[col.id]+'</div><div class="sc-l" style="color:'+col.color+'">'+col.name+'</div><div class="sc-v" style="color:'+col.color+'">'+(rs[col.id]||0)+'</div></div>';}).join('');
-    sgH+='<div class="sc"><div class="sc-ic">👥</div><div class="sc-l">Total</div><div class="sc-v">'+totalR+'</div></div></div>';
+    pipeH+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📋 Pipeline Recompra</div>';
+    pipeH+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
+    board.cols.forEach(function(col){var n=rs[col.id]||0;if(!n)return;pipeH+='<div style="padding:6px 12px;background:'+col.bg+';border:1.5px solid '+col.color+'33;border-radius:20px;font-size:12px;font-weight:700;color:'+col.color+';">'+col.name+' <span style="font-size:14px;">'+n+'</span></div>';});
+    pipeH+='</div>';
   }
-
   if(showNuevos){
     var ls=kbs.nuevos;var boardN=KB.nuevos;
-    var totalN=Object.values(ls).reduce(function(a,b){return a+b;},0);
-    sgH+='<div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;'+(showRecompra?'margin-top:4px;':'')+'">✨ Clientes Nuevos</div>';
-    sgH+='<div class="sg" style="margin-bottom:20px;">';
-    sgH+=boardN.cols.map(function(col){return '<div class="sc"><div class="sc-ic">'+{nl:'✨',nc:'📞',ni2:'⭐',nn:'💬',ncr:'💳',nv:'🎉',np:'❌'}[col.id]+'</div><div class="sc-l" style="color:'+col.color+'">'+col.name+'</div><div class="sc-v" style="color:'+col.color+'">'+(ls[col.id]||0)+'</div></div>';}).join('');
-    sgH+='<div class="sc"><div class="sc-ic">👥</div><div class="sc-l">Total</div><div class="sc-v">'+totalN+'</div></div></div>';
+    pipeH+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">✨ Pipeline Clientes Nuevos</div>';
+    pipeH+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
+    boardN.cols.forEach(function(col){var n=ls[col.id]||0;if(!n)return;pipeH+='<div style="padding:6px 12px;background:'+col.bg+';border:1.5px solid '+col.color+'33;border-radius:20px;font-size:12px;font-weight:700;color:'+col.color+';">'+col.name+' <span style="font-size:14px;">'+n+'</span></div>';});
+    pipeH+='</div>';
   }
+  pipeH+='</div>';
+
+  var tableH=isA&&!dashSelVend?buildVendTable(cids):'';
 
   var chartsH='<div class="ch2">';
-  if(showRecompra)chartsH+='<div class="chart-card"><div class="chart-ttl">📊 Recompra — etapas Kanban</div><canvas id="ch-kb" height="220"></canvas></div>';
-  if(showNuevos)chartsH+='<div class="chart-card"><div class="chart-ttl">✨ Clientes Nuevos — etapas</div><canvas id="ch-kb2" height="220"></canvas></div>';
+  chartsH+='<div class="chart-card"><div class="chart-ttl">📞 Actividad del equipo — últimos 7 días</div><canvas id="ch-vend" height="'+(Math.max(160,cids.length*20+60))+'"></canvas></div>';
+  if(showNuevos)chartsH+='<div class="chart-card"><div class="chart-ttl">🎯 Embudo de Leads</div><canvas id="ch-kb2" height="220"></canvas></div>';
   chartsH+='</div>';
-  chartsH+='<div class="chart-card"><div class="chart-ttl">🏆 Gestiones por vendedor</div><canvas id="ch-vend" height="180"></canvas></div>';
-  if(showRecompra)chartsH+='<div class="chart-card"><div class="chart-ttl">📈 Recompra por cartera y etapa</div><canvas id="ch-cart" height="130"></canvas></div>';
 
-  var noData=Object.values(kbs.recompra).every(function(v){return v===0;})&&Object.values(kbs.nuevos).every(function(v){return v===0;});
-  return cartH+vendH+tabBar+(noData?'<div class="notice">⚠️ Sin datos para este filtro. Sube carteras o agrega leads.</div>':'')+sgH+chartsH;
+  return cartH+vendH+tabBar+pulseH+kpiH+pipeH+tableH+chartsH;
 }
 
 
 function setDashTab(el){activeDash=el.dataset.tab;goTo('dashboard');}
 function setDashCart(id,el){dashCart=id;dashSelVend=null;document.querySelectorAll('#cp-dash .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');goTo('dashboard');}
-function setDashVend(v,el){dashSelVend=v;document.querySelectorAll('#vp-dash .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderDashCharts();}
+function setDashVend(v,el){dashSelVend=(dashSelVend===v)?null:v;goTo('dashboard');}
 
 function renderDashCharts(){
   var kbs=getKbStats(dashCart,dashSelVend);
@@ -998,46 +1102,38 @@ function renderDashCharts(){
   var showNuevos=activeDash==='todos'||activeDash==='nuevos';
   var cids=dashCart?[dashCart]:DB.carteras.map(function(x){return x.id;});
 
-  function mkChart(id,key,cfg){var el=document.getElementById(id);if(!el)return;if(window[key])window[key].destroy();window[key]=new Chart(el,cfg);}
+  function mkChart(id,key,cfg){var el=document.getElementById(id);if(!el)return;if(window[key]){try{window[key].destroy();}catch(e){}}window[key]=new Chart(el,cfg);}
 
-  // Recompra donut
-  if(showRecompra){
-    var board=KB.recompra;var stats=kbs.recompra;
-    mkChart('ch-kb','_ch1',{type:'doughnut',data:{
-      labels:board.cols.map(function(c){return c.name;}),
-      datasets:[{data:board.cols.map(function(c){return stats[c.id]||0;}),backgroundColor:board.cols.map(function(c){return c.color;}),borderWidth:3,borderColor:'#fff'}]
-    },options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8,boxWidth:12}}},cutout:'62%'}});
-  }
-
-  // Nuevos donut
-  if(showNuevos){
-    var boardN=KB.nuevos;var statsN=kbs.nuevos;
-    mkChart('ch-kb2','_ch2',{type:'doughnut',data:{
-      labels:boardN.cols.map(function(c){return c.name;}),
-      datasets:[{data:boardN.cols.map(function(c){return statsN[c.id]||0;}),backgroundColor:boardN.cols.map(function(c){return c.color;}),borderWidth:3,borderColor:'#fff'}]
-    },options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8,boxWidth:12}}},cutout:'62%'}});
-  }
-
-  // Gestiones por vendedor (siempre)
+  // Gráfico 1: Actividad del equipo — barras horizontales, últimos 7 días
+  var hace7s=monFechaHN(-6);
   var callsF=DB.calls.filter(function(c){
     if(!cids.includes(c.carteraId))return false;
     if(dashSelVend&&(c.userName||c.userId||'').trim().toLowerCase()!==dashSelVend.trim().toLowerCase())return false;
-    return true;
+    return(c.dateISO||'')>=hace7s;
   });
-  var vMap={};callsF.forEach(function(call){var k=call.userName||call.userId;vMap[k]=(vMap[k]||0)+1;});
+  var vMap={};callsF.forEach(function(call){var k=(call.userName||call.userId||'').trim();if(k)vMap[k]=(vMap[k]||0)+1;});
   var vKeys=Object.keys(vMap).sort(function(a,b){return vMap[b]-vMap[a];});
-  mkChart('ch-vend','_ch3',{type:'bar',data:{
-    labels:vKeys,
-    datasets:[{label:'Gestiones',data:vKeys.map(function(k){return vMap[k];}),backgroundColor:vKeys.map(function(_,i){return['#5b8dee','#48bb78','#ed8936','#9f7aea','#38b2ac','#fc8181'][i%6];}),borderRadius:10,borderSkipped:false}]
-  },options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' gestiones';}}}},scales:{y:{beginAtZero:true,grid:{color:'#eef2f7'}},x:{grid:{display:false}}}}});
+  if(vKeys.length){
+    mkChart('ch-vend','_ch3',{type:'bar',data:{
+      labels:vKeys,
+      datasets:[{label:'Gestiones 7d',data:vKeys.map(function(k){return vMap[k];}),
+        backgroundColor:'#5b8dee',borderRadius:6,borderSkipped:false}]
+    },options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' gestiones esta semana';}}}},
+      scales:{x:{beginAtZero:true,grid:{color:'#eef2f7'},ticks:{stepSize:1}},y:{grid:{display:false}}}}});
+  }
 
-  // Recompra por cartera (stacked bar)
-  if(showRecompra){
-    var carteras=dashCart?DB.carteras.filter(function(c){return c.id===dashCart;}):DB.carteras;
-    var managed=new Set(DB.calls.filter(function(c){return!dashSelVend||(c.userName||c.userId||'').trim().toLowerCase()===dashSelVend.trim().toLowerCase();}).map(function(c){return c.clientId;}));
-    var boardR=KB.recompra;
-    var datasets=boardR.cols.map(function(col){return{label:col.name,data:carteras.map(function(car){return(DB.clients[car.id]||[]).filter(function(c){return(managed.has(c.id)||(c.kbCol&&c.kbCol!=='prospecto'))&&(c.kbCol||'prospecto')===col.id;}).length;}),backgroundColor:col.color,borderRadius:4,borderSkipped:false};});
-    mkChart('ch-cart','_ch4',{type:'bar',data:{labels:carteras.map(function(c){return c.name;}),datasets:datasets},options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8,boxWidth:12}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef2f7'}}}}});
+  // Gráfico 2: Embudo de Leads — barra horizontal por etapa
+  if(showNuevos){
+    var boardN=KB.nuevos;var statsN=kbs.nuevos;
+    var etapas=boardN.cols.filter(function(c){return(statsN[c.id]||0)>0;});
+    if(etapas.length){
+      mkChart('ch-kb2','_ch2',{type:'bar',data:{
+        labels:etapas.map(function(c){return c.name;}),
+        datasets:[{label:'Leads',data:etapas.map(function(c){return statsN[c.id]||0;}),
+          backgroundColor:etapas.map(function(c){return c.color;}),borderRadius:8,borderSkipped:false}]
+      },options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' leads';}}}},
+        scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#eef2f7'},ticks:{stepSize:1}}}}});
+    }
   }
 }
 
@@ -1831,11 +1927,12 @@ async function loadMonitor(){
     return r.json();
   }
 
-  var EQUIPO=[
-    {name:'Alejandra'},{name:'Allison'},{name:'Brayan'},{name:'Denys'},
-    {name:'fer'},{name:'Gabriela'},{name:'Johana'},{name:'Karla'},
-    {name:'Milagro'},{name:'Sayda'},{name:'Jorge'},{name:'Ana Castro'},
-  ];
+  var _eqSeen=new Set();
+  var EQUIPO=DB.users.filter(function(u){
+    if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
+    if(!u.name)return false;var k=u.name.trim().toLowerCase();
+    if(_eqSeen.has(k))return false;_eqSeen.add(k);return true;
+  }).map(function(u){return{name:u.name.trim()};});
   var LEAD_LABEL={nn:'Nuevo',nl:'Llamado',nc:'Contactado',ni2:'Interesado',nv:'Vendido'};
   var KB_LABEL={prospecto:'Prospecto',contactado:'Contactado',interesado:'Interesado',negociando:'Negociando',credito:'Crédito',vendido:'Vendido'};
 
@@ -1978,6 +2075,7 @@ async function loadMonitor(){
       '<div style="margin-bottom:8px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#475569;margin-bottom:3px;">🔄 Recompra — kanban</div><div style="display:flex;flex-wrap:wrap;gap:3px;">'+recompH+'</div></div>'+
       '<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;"><span style="font-size:9px;color:#475569;min-width:22px;">14d</span><div style="display:flex;gap:2px;">'+dots+'</div></div>'+
       ultBloque(ultMap[v.name]||null)+
+      '<div style="margin-top:10px;text-align:center;font-size:10px;color:#475569;border-top:1px solid #334155;padding-top:8px;">📊 Toca para ver detalle de 7 días →</div>'+
       '</div>';
   }
 
