@@ -524,11 +524,22 @@ function getActiveVendorsForPool(pool){
   if(!pool)return[];
   var cutoff=new Date();cutoff.setDate(cutoff.getDate()-45);
   var cutStr=cutoff.toISOString().slice(0,10);
-  var activeNames=new Set(DB.calls.filter(function(c){return(c.dateISO||'')>=cutStr;}).map(function(c){return(c.userName||'').trim().toLowerCase();}));
+  // Active = appeared in gestiones OR created a lead in the last 45 days
+  var activeNames=new Set();
+  DB.calls.filter(function(c){return(c.dateISO||'')>=cutStr;}).forEach(function(c){if(c.userName)activeNames.add(c.userName.trim().toLowerCase());});
+  (DB.newLeads||[]).filter(function(l){return(l.createdAt||'')>=cutStr.slice(0,7);}).forEach(function(l){if(l.createdBy)activeNames.add(l.createdBy.trim().toLowerCase());});
+  // Include vendedor AND subadmin with cartera in pool (not admin)
+  var seen=new Set();
   return DB.users.filter(function(u){
-    if(u.role!=='vendedor')return false;
+    if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
+    if(u.role==='subadmin'&&(!Array.isArray(u.cartera)||!u.cartera.length))return false;
+    var name=(u.name||'').trim();
+    if(!name||seen.has(name.toLowerCase()))return false;
     var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-    return uc.some(function(c){return pool.carteras.indexOf(c)>=0;})&&activeNames.has((u.name||'').trim().toLowerCase());
+    var inPool=uc.some(function(c){return pool.carteras.indexOf(c)>=0;});
+    var isActive=activeNames.has(name.toLowerCase());
+    if(inPool&&isActive){seen.add(name.toLowerCase());return true;}
+    return false;
   });
 }
 function assignNextVendor(pool){
@@ -715,24 +726,31 @@ function getPool(){
   });
 }
 function buildCartPills(cur,fn,pid){var h='<div class="filter-row" id="'+(pid||'cp-'+fn)+'"><div class="ytab '+(cur===null?'on':'')+'" onclick="'+fn+'(null,this)">Todas</div>';DB.carteras.forEach(function(c){h+='<div class="ytab '+(cur===c.id?'on':'')+'" data-cid="'+c.id+'" onclick="'+fn+'(this.dataset.cid,this)">'+c.name+'</div>';});return h+'</div>';}
-function buildVendPills(cur,fn,pid,cid){
-  // All users + names from calls, normalized
+function buildVendPills(cur,fn,pid,cid,customCounts){
   var vendUsers=DB.users.filter(function(u){return u.role==='vendedor'||u.role==='subadmin';});
   var calls=cid?DB.calls.filter(function(c){return c.carteraId===cid;}):DB.calls;
-  // Build map of normalized name -> display name + count
   var vendMap={};
   vendUsers.forEach(function(u){
     if(!u.name)return;
     var key=u.name.trim().toLowerCase();
     if(!vendMap[key])vendMap[key]={display:u.name.trim(),count:0};
   });
-  calls.forEach(function(c){
-    var raw=c.userName||c.userId||'';
-    var key=raw.trim().toLowerCase();
-    if(!key)return;
-    if(!vendMap[key])vendMap[key]={display:raw.trim(),count:0};
-    vendMap[key].count++;
-  });
+  if(customCounts){
+    // Use caller-supplied counts (e.g. Kanban clients/leads per vendor)
+    Object.keys(customCounts).forEach(function(name){
+      var key=name.trim().toLowerCase();
+      if(!vendMap[key])vendMap[key]={display:name.trim(),count:0};
+      vendMap[key].count=customCounts[name]||0;
+    });
+  } else {
+    calls.forEach(function(c){
+      var raw=c.userName||c.userId||'';
+      var key=raw.trim().toLowerCase();
+      if(!key)return;
+      if(!vendMap[key])vendMap[key]={display:raw.trim(),count:0};
+      vendMap[key].count++;
+    });
+  }
   var allVends=Object.values(vendMap).sort(function(a,b){return a.display.localeCompare(b.display);});
   if(!allVends.length)return '';
   var curNorm=cur?(cur.trim().toLowerCase()):null;
@@ -740,7 +758,7 @@ function buildVendPills(cur,fn,pid,cid){
   h+='<div class="ytab '+(cur===null?'on':'')+'" onclick="'+fn+'(null,this)">👥 Todos</div>';
   allVends.forEach(function(v){
     var isActive=curNorm&&v.display.trim().toLowerCase()===curNorm;
-    h+='<div class="ytab '+(isActive?'on':'')+'" data-vend="'+v.display+'" onclick="'+fn+'(this.dataset.vend,this)">👤 '+v.display+(v.count>0?' ('+v.count+')':'')+'</div>';
+    h+='<div class="ytab '+(isActive?'on':'')+'" data-vend="'+v.display+'" onclick="'+fn+'(this.dataset.vend,this)">👤 '+v.display+(v.count>0?' <span style="background:#5b8dee;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:2px;">'+v.count+'</span>':'')+'</div>';
   });
   return h+'</div>';
 }
@@ -1027,7 +1045,7 @@ function renderDashCharts(){
 function vKanban(){
   var isA=CU.role!=='vendedor';
   var h='<div class="filter-row" style="margin-bottom:14px;"><button class="ytab '+(activeBoard==='recompra'?'on':'')+'" data-b="recompra" onclick="switchBoard(this)">📋 Recompra</button><button class="ytab '+(activeBoard==='nuevos'?'on':'')+'" data-b="nuevos" onclick="switchBoard(this)">✨ Clientes Nuevos</button><button class="ytab '+(activeBoard==='facebook'?'on':'')+'" data-b="facebook" onclick="switchBoard(this)">📣 Facebook/Pub.</button></div>';
-  if(isA){h+=buildCartPills(kbActiveCart,'setKbCart','cp-kb');h+=buildVendPills(kbSelVend,'setKbVend','vp-kb',kbActiveCart);}
+  if(isA){h+=buildCartPills(kbActiveCart,'setKbCart','cp-kb');h+=buildVendPills(kbSelVend,'setKbVend','vp-kb',kbActiveCart,buildKBVendCounts());}
   else if(CU.role==='vendedor'){
     var vendCarts=DB.carteras.filter(function(c){return getCarterasVend().indexOf(c.id)>=0;});
     if(vendCarts.length>1){
@@ -1043,7 +1061,24 @@ function vKanban(){
   h+='<button class="btn-s" style="font-size:13px;padding:10px 18px;" onclick="exportKbExcel()">📥 Exportar Excel</button></div>';
   return h;
 }
-function switchBoard(el){activeBoard=el.dataset.b;kbSelVend=null;goTo('kanban');}
+function switchBoard(el){activeBoard=el.dataset.b;goTo('kanban');}
+function buildKBVendCounts(){
+  var counts={};
+  if(activeBoard==='nuevos'||activeBoard==='facebook'){
+    var pool2=(activeBoard==='facebook')?(DB.newLeads||[]).filter(function(l){var f=(l.fuente||'').toLowerCase();return f.includes('facebook')||f.includes('fb')||f.includes('publicidad')||f.includes('pub');}):DB.newLeads||[];
+    pool2.forEach(function(l){var k=(l.assignedTo||l.createdBy||'').trim();if(k)counts[k]=(counts[k]||0)+1;});
+  } else {
+    // Recompra: unique clients per vendor
+    var cids2=kbActiveCart?[kbActiveCart]:DB.carteras.map(function(x){return x.id;});
+    var vc={};
+    DB.calls.filter(function(c){return cids2.includes(c.carteraId);}).forEach(function(c){
+      var k=(c.userName||c.userId||'').trim();if(!k||!c.clientId)return;
+      if(!vc[k])vc[k]=new Set();vc[k].add(c.clientId);
+    });
+    Object.keys(vc).forEach(function(k){counts[k]=vc[k].size;});
+  }
+  return counts;
+}
 function buildRRPanel(){
   var h='<div style="margin-top:14px;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);">';
   h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">⚡ Rotación de asignación (Round-Robin)</div>';
@@ -1054,8 +1089,8 @@ function buildRRPanel(){
     var last=st[pool.id]||'';
     var lastIdx=-1;for(var i=0;i<vendors.length;i++){if(vendors[i].name===last){lastIdx=i;break;}}
     var nextIdx=(lastIdx+1)%Math.max(1,vendors.length);
-    // Count leads per vendor
-    var counts={};(DB.newLeads||[]).filter(function(l){return pool.carteras.indexOf(l.leadCartera||'')>=0;}).forEach(function(l){var k=l.assignedTo||'Sin asignar';counts[k]=(counts[k]||0)+1;});
+    // Count ALL leads assigned to each vendor (regardless of leadCartera)
+    var counts={};(DB.newLeads||[]).forEach(function(l){if(l.assignedTo)counts[l.assignedTo]=(counts[l.assignedTo]||0)+1;});
     h+='<div style="flex:1;min-width:180px;background:#f7f9fc;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;">';
     h+='<div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:6px;">'+pool.label+'</div>';
     if(!vendors.length){h+='<div style="font-size:11px;color:#c53030;">Sin vendedores activos</div>';}
@@ -1075,7 +1110,7 @@ function buildRRPanel(){
   h+='</div></div>';
   return h;
 }
-function setKbCart(id,el){kbActiveCart=id;kbSelVend=null;document.querySelectorAll('#cp-kb .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderKanban();}
+function setKbCart(id,el){kbActiveCart=id;document.querySelectorAll('#cp-kb .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderKanban();}
 function setKbVend(v,el){kbSelVend=v;document.querySelectorAll('#vp-kb .ytab').forEach(function(t){t.classList.remove('on');});el.classList.add('on');renderKanban();}
 function renderKanban(){
   var kbc=document.getElementById('kb-content');if(!kbc)return;
@@ -1115,6 +1150,15 @@ function renderKanban(){
   var colMap={};board.cols.forEach(function(col){colMap[col.id]=[];});
   pool.forEach(function(c){var cid2=c[colField]||defCol;if(!colMap[cid2])cid2=defCol;colMap[cid2].push(c);});
   var isLead=activeBoard==='nuevos'||activeBoard==='facebook';
+  if(activeBoard==='facebook'&&!pool.length){
+    kbc.innerHTML='<div style="background:#fff;border:1.5px solid #bee3f8;border-radius:16px;padding:32px;text-align:center;max-width:480px;margin:40px auto;">'
+    +'<div style="font-size:48px;margin-bottom:12px;">📣</div>'
+    +'<div style="font-size:16px;font-weight:700;color:#2d3748;margin-bottom:8px;">Sin leads de Facebook/Publicidad todavía</div>'
+    +'<div style="font-size:13px;color:#718096;line-height:1.6;margin-bottom:20px;">Cuando un cliente llegue por Facebook, Instagram o publicidad, agrégalo aquí con el botón de abajo. Se asignará automáticamente al siguiente vendedor en turno.</div>'
+    +'<button class="btn-p" onclick="openAddLead()" style="padding:11px 24px;font-size:13px;">📣 Agregar primer lead de Facebook</button>'
+    +'</div>';
+    return;
+  }
   var h='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero</div><div class="kanban-wrap"><div class="kanban-board">';
   board.cols.forEach(function(col){
     var cc=colMap[col.id]||[];
