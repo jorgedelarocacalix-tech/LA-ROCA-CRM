@@ -1234,14 +1234,6 @@ function buildAnalisisDashHTML(){
   var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var fd=new Date(hoy+'T12:00:00Z');
   var fechaTxt=fd.getUTCDate()+' de '+meses[fd.getUTCMonth()]+' '+fd.getUTCFullYear();
-  // Domingos: descanso, sin análisis
-  if(fd.getUTCDay()===0){
-    return '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;margin-bottom:20px;">'
-      +'<div style="font-size:32px;margin-bottom:8px;">😴</div>'
-      +'<div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px;">Hoy es domingo — día de descanso</div>'
-      +'<div style="font-size:12px;color:var(--t3);">El análisis del equipo estará disponible de lunes a sábado</div>'
-      +'</div>';
-  }
   var seen=new Set();
   var allVendors=DB.users.filter(function(u){
     if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
