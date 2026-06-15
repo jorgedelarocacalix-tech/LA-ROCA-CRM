@@ -1103,15 +1103,22 @@ var _ETAPA_ACCION={
 };
 function _etapaLabel(col){return{interesado:'Interesado',negociando:'Negociando',ni2:'Lead interesado',nn:'Lead negociando'}[col]||col;}
 
-function _vendStats(vn,hoy){
-  var vCalls=DB.calls.filter(function(c){return(c.userName||'').trim().toLowerCase()===vn.toLowerCase();});
+function _vendStats(vn,hoy,poolCarteras){
+  var vCalls=DB.calls.filter(function(c){
+    if((c.userName||'').trim().toLowerCase()!==vn.toLowerCase())return false;
+    if(poolCarteras&&poolCarteras.length)return poolCarteras.indexOf(c.carteraId)>=0;
+    return true;
+  });
   var callsHoy=vCalls.filter(function(c){return c.dateISO===hoy;});
   var calls7d=vCalls.filter(function(c){return(c.dateISO||'')>=monFechaHN(-6);});
   var lastCall=vCalls.slice().sort(function(a,b){return(b.dateISO||'')>(a.dateISO||'')?1:-1;})[0];
   var dago=lastCall?Math.round((new Date(hoy+'T12:00:00Z')-new Date(lastCall.dateISO+'T12:00:00Z'))/86400000):999;
+  var uniqueCli7d=new Set(calls7d.map(function(c){return c.clientId;}).filter(Boolean)).size;
+  var avgPerDia=calls7d.length?+(uniqueCli7d/7).toFixed(1):0;
   var estancados=[];
   // Solo interesado y negociando (cuenta activa NO cuenta como parado)
-  DB.carteras.forEach(function(car){
+  var cartToCheck=poolCarteras&&poolCarteras.length?DB.carteras.filter(function(car){return poolCarteras.indexOf(car.id)>=0;}):DB.carteras;
+  cartToCheck.forEach(function(car){
     (DB.clients[car.id]||[]).forEach(function(c){
       if(c.kbCol!=='interesado'&&c.kbCol!=='negociando')return;
       var myLast=vCalls.filter(function(x){return x.clientId===c.id;}).sort(function(a,b){return(b.dateISO||'')>(a.dateISO||'')?1:-1;})[0];
@@ -1131,7 +1138,7 @@ function _vendStats(vn,hoy){
     if(d>=5)estancados.push({nombre:l.nombre,dias:d,col:l.leadCol,etapa:_etapaLabel(l.leadCol),tienda:'Leads',accion:_ETAPA_ACCION[l.leadCol]||''});
   });
   estancados.sort(function(a,b){return b.dias-a.dias;});
-  return{name:vn,dago:dago,callsHoy:callsHoy.length,calls7d:calls7d.length,estancados:estancados,leadsCalientes:myLeads.filter(function(l){return l.leadCol==='ni2'||l.leadCol==='nn';}).length,totalLeads:myLeads.length,leadsCerrados:myLeads.filter(function(l){return l.leadCol==='nv';}).length,hasData:vCalls.length>0||myLeads.length>0};
+  return{name:vn,dago:dago,callsHoy:callsHoy.length,calls7d:calls7d.length,avgPerDia:avgPerDia,estancados:estancados,leadsCalientes:myLeads.filter(function(l){return l.leadCol==='ni2'||l.leadCol==='nn';}).length,totalLeads:myLeads.length,leadsCerrados:myLeads.filter(function(l){return l.leadCol==='nv';}).length,hasData:vCalls.length>0||myLeads.length>0};
 }
 
 function _buildPoolTxt(pool,hoy,fechaTxt){
@@ -1144,26 +1151,27 @@ function _buildPoolTxt(pool,hoy,fechaTxt){
   pool.carteras.forEach(function(cid){
     var car=DB.carteras.find(function(x){return x.id===cid;});
     if(!car)return;
-    // Vendors cuya primera cartera es esta (para no duplicar)
+    // Vendors cuya primera cartera de este pool es esta — dedup dentro del filter
     var carVendors=DB.users.filter(function(u){
       if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
       if(!u.name)return false;
       var k=u.name.trim().toLowerCase();
       if(seen.has(k))return false;
       var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-      // Pertenece a esta cartera Y es la primera cartera del pool que tiene
       var firstPool=uc.find(function(c){return pool.carteras.indexOf(c)>=0;});
-      return firstPool===cid;
+      if(firstPool!==cid)return false;
+      seen.add(k);
+      return true;
     });
     if(!carVendors.length)return;
     lines.push('🏪 '+car.name+':');
     carVendors.forEach(function(u){
-      seen.add(u.name.trim().toLowerCase());
-      var st=_vendStats(u.name.trim(),hoy);
+      var st=_vendStats(u.name.trim(),hoy,pool.carteras);
       var statusIcon=st.callsHoy>0?'✅':st.dago<=6?'🟡':'🔴';
       var statusTxt=st.callsHoy>0?(st.callsHoy+' gestiones hoy · '+st.calls7d+' esta semana'):
         (st.dago>=999?'nunca ha ingresado':'sin actividad hace '+st.dago+' días');
-      var line='   👤 '+st.name+': '+statusIcon+' '+statusTxt;
+      var avgTxt=st.avgPerDia>0?' · ~'+st.avgPerDia+' clientes/día':'';
+      var line='   👤 '+st.name+': '+statusIcon+' '+statusTxt+avgTxt;
       if(st.totalLeads)line+=' | leads '+st.leadsCerrados+'/'+st.totalLeads;
       lines.push(line);
       // Prospectos parados
@@ -1174,24 +1182,27 @@ function _buildPoolTxt(pool,hoy,fechaTxt){
     });
     lines.push('');
   });
-  // Resumen de pendientes urgentes
+  // Resumen de pendientes urgentes (máx 5)
   var urgentes=[];
+  var uNameSeen=new Set();
   pool.carteras.forEach(function(cid){
     DB.users.filter(function(u){
       if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
       var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
       return uc.indexOf(cid)>=0;
     }).forEach(function(u){
-      var st=_vendStats(u.name.trim(),hoy);
+      var k=u.name.trim().toLowerCase();
+      if(uNameSeen.has(k))return;
+      uNameSeen.add(k);
+      var st=_vendStats(u.name.trim(),hoy,pool.carteras);
       if(st.dago>6)urgentes.push('🔴 '+st.name+' — '+(st.dago>=999?'nunca ha ingresado':st.dago+'d sin actividad'));
       st.estancados.filter(function(e){return e.dias>=5;}).forEach(function(e){
         urgentes.push('⚠️ '+st.name+' → '+e.nombre+' ('+e.dias+'d) — '+e.accion);
       });
     });
   });
-  // Dedup urgentes
   var uSeen=new Set();
-  urgentes=urgentes.filter(function(u){if(uSeen.has(u))return false;uSeen.add(u);return true;});
+  urgentes=urgentes.filter(function(u){if(uSeen.has(u))return false;uSeen.add(u);return true;}).slice(0,5);
   if(urgentes.length){lines.push('📌 Pendientes urgentes:');urgentes.forEach(function(u){lines.push('   · '+u);});}
   else lines.push('✅ Sin pendientes urgentes');
   return lines.join('\n');
@@ -1213,7 +1224,7 @@ function _poolCard(pool,poolVendors,idx,hoy,fechaTxt){
   if(alertas)h+='<span style="font-size:10px;background:#fbd38d44;color:#744210;padding:2px 8px;border-radius:10px;font-weight:700;">⚠️ '+alertas+' parados</span>';
   h+='</div></div>';
   h+='<div style="padding:12px 14px;">';
-  h+='<textarea id="rp-ta-'+pid+'" readonly style="width:100%;min-height:200px;border:1.5px solid var(--border);border-radius:8px;padding:10px;background:#f8fafc;font-family:monospace;font-size:11px;color:var(--t1);resize:vertical;outline:none;line-height:1.6;box-sizing:border-box;">'+txt+'</textarea>';
+  h+='<textarea id="rp-ta-'+pid+'" readonly style="width:100%;min-height:400px;border:1.5px solid var(--border);border-radius:8px;padding:10px;background:#f8fafc;font-family:monospace;font-size:11px;color:var(--t1);resize:vertical;outline:none;line-height:1.6;box-sizing:border-box;">'+txt+'</textarea>';
   h+='<div style="display:flex;gap:8px;margin-top:8px;">';
   h+='<button onclick="dashCopiarPool(\''+pid+'\')" style="background:var(--blue);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">📋 Copiar</button>';
   h+='<button onclick="dashWAPool(\''+pid+'\')" style="background:#25D366;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">📤 WhatsApp</button>';
@@ -1226,20 +1237,25 @@ function buildAnalisisDashHTML(){
   var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var fd=new Date(hoy+'T12:00:00Z');
   var fechaTxt=fd.getUTCDate()+' de '+meses[fd.getUTCMonth()]+' '+fd.getUTCFullYear();
-  var seen=new Set();
+  // No dedup global — cada pool ve sus propios usuarios (Alejandra puede aparecer en roca1 Y roca2 con carteras distintas)
   var allVendors=DB.users.filter(function(u){
-    if(u.role!=='vendedor'&&u.role!=='subadmin')return false;
-    if(!u.name)return false;
-    var k=u.name.trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true;
+    return (u.role==='vendedor'||u.role==='subadmin')&&u.name&&
+      (Array.isArray(u.cartera)?u.cartera:[u.cartera||'']).some(function(c){return c;});
   });
   var h='<div style="margin-bottom:20px;">';
   h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;">📊 Análisis del equipo — '+fechaTxt+'</div>';
   VENDOR_POOLS.forEach(function(pool,idx){
+    // Dedup por nombre dentro de este pool
+    var poolSeen=new Set();
     var poolVendors=allVendors.filter(function(u){
       var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-      return uc.some(function(c){return pool.carteras.indexOf(c)>=0;});
+      if(!uc.some(function(c){return pool.carteras.indexOf(c)>=0;}))return false;
+      var k=u.name.trim().toLowerCase();
+      if(poolSeen.has(k))return false;
+      poolSeen.add(k);
+      return true;
     });
-    var stats=poolVendors.map(function(u){return _vendStats(u.name.trim(),hoy);}).filter(function(r){return r.hasData;});
+    var stats=poolVendors.map(function(u){return _vendStats(u.name.trim(),hoy,pool.carteras);}).filter(function(r){return r.hasData;});
     if(!stats.length)return;
     h+=_poolCard(pool,stats,idx,hoy,fechaTxt);
   });
@@ -1302,7 +1318,7 @@ function buildReporteTxtPool(pid){
     var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
     return uc.some(function(c){return pool.carteras.indexOf(c)>=0;});
   });
-  var stats=poolVendors.map(function(u){return _vendStats(u.name.trim(),hoy);}).filter(function(r){return r.hasData;});
+  var stats=poolVendors.map(function(u){return _vendStats(u.name.trim(),hoy,pool.carteras);}).filter(function(r){return r.hasData;});
   var activos=stats.filter(function(r){return r.callsHoy>0;}).sort(function(a,b){return b.callsHoy-a.callsHoy;});
   var noActivos=stats.filter(function(r){return r.callsHoy===0;});
   if(activos.length){
