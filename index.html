@@ -2954,6 +2954,21 @@ function botLoadInit(){
   if(sinSeqCnt>0)msg+='\n\n⏳ Tienes <strong>'+sinSeqCnt+' cliente'+(sinSeqCnt!==1?'s':'')+' sin primera gestión</strong> tuya en la cartera.';
   msg+='\n\n¿Quieres un <strong>plan para hoy</strong> o tienes alguna pregunta?';
   botBubble(msg,'bot');
+  var sugs=['¿Qué hago primero hoy?','Dame un plan para hoy','¿Cómo abordo a un cliente que no contesta?','¿Qué frase uso con un cliente interesado?','¿Cómo cierro una venta hoy?'];
+  var sd=document.createElement('div');
+  sd.style.cssText='display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;';
+  sugs.forEach(function(s){
+    var b=document.createElement('button');
+    b.textContent=s;
+    b.style.cssText='background:#f5f0ff;border:1px solid #c4b5fd;border-radius:20px;padding:6px 12px;font-size:11px;color:#6d28d9;cursor:pointer;font-weight:600;white-space:nowrap;';
+    b.addEventListener('click',function(){
+      var inp=document.getElementById('bot-inp');if(inp){inp.value=s;botSend();}
+      sd.remove();
+    });
+    sd.appendChild(b);
+  });
+  var msgs=document.getElementById('bot-msgs');
+  if(msgs){msgs.appendChild(sd);msgs.scrollTop=msgs.scrollHeight;}
 }
 function botSend(){
   var inp=document.getElementById('bot-inp');if(!inp||!inp.value.trim())return;
