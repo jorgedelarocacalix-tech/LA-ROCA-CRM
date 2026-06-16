@@ -586,7 +586,23 @@ function score(c){
   return{s:s,cat:cat,lbl:lbl,ic:ic,rsns:rsns};
 }
 
-function initLogin(){pinBuf='';renderPD();document.getElementById('lerr').textContent='';}
+function _mergeSupabaseUser(su){
+  var cart=su.cartera;
+  if(cart&&!Array.isArray(cart)){try{var p=JSON.parse(cart);cart=Array.isArray(p)?p:[cart];}catch(e){cart=cart?[cart]:[];}}
+  cart=normalizeCartArray(cart||[]);
+  var nu={id:su.id,name:su.name,pin:String(su.pin),role:su.role||'vendedor',cartera:cart};
+  var ex=DB.users.findIndex(function(x){return String(x.pin)===String(su.pin)||x.id===su.id;});
+  if(ex>=0)Object.assign(DB.users[ex],nu);else DB.users.push(nu);
+  saveDB();
+  return DB.users.find(function(x){return String(x.pin)===String(su.pin);});
+}
+function initLogin(){
+  pinBuf='';renderPD();document.getElementById('lerr').textContent='';
+  // Precarga usuarios desde Supabase para que nuevos dispositivos puedan iniciar sesión
+  sbF('usuarios','GET',null,'?select=*').then(function(us){
+    if(us&&us.length)us.forEach(function(su){_mergeSupabaseUser(su);});
+  }).catch(function(){});
+}
 function pi(d){if(pinBuf.length>=4)return;pinBuf+=d;renderPD();if(pinBuf.length===4)setTimeout(doLogin,350);}
 function pinDel(){pinBuf=pinBuf.slice(0,-1);renderPD();}
 function pinClr(){pinBuf='';renderPD();}
@@ -594,11 +610,17 @@ function renderPD(){for(var i=0;i<4;i++){var d=document.getElementById('pd'+i);d
 function shk(){document.querySelectorAll('.pd').forEach(function(d){d.classList.add('shk');setTimeout(function(){d.classList.remove('shk');},350);});}
 function doLogin(){
   var err=document.getElementById('lerr');
-  var u=DB.users.find(function(x){return x.pin===pinBuf;});
-  if(!u){err.textContent='PIN incorrecto';shk();pinBuf='';renderPD();return;}
-  err.textContent='';CU=u;pinBuf='';renderPD();
-  document.getElementById('s-login').classList.remove('on');
-  launchApp();
+  var u=DB.users.find(function(x){return String(x.pin)===pinBuf;});
+  if(u){err.textContent='';CU=u;pinBuf='';renderPD();document.getElementById('s-login').classList.remove('on');launchApp();return;}
+  // Fallback: buscar en Supabase si no está en caché local
+  err.textContent='Verificando...';
+  var pb=pinBuf;pinBuf='';renderPD();
+  sbF('usuarios','GET',null,'?pin=eq.'+pb+'&select=*').then(function(rows){
+    if(!rows||!rows.length){err.textContent='PIN incorrecto';shk();return;}
+    var nu=_mergeSupabaseUser(rows[0]);
+    if(!nu){err.textContent='PIN incorrecto';shk();return;}
+    err.textContent='';CU=nu;document.getElementById('s-login').classList.remove('on');launchApp();
+  }).catch(function(){err.textContent='PIN incorrecto';shk();});
 }
 
 
