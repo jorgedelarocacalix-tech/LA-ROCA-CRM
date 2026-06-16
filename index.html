@@ -3032,13 +3032,13 @@ function botSend(){
   var isAdmin=CU.role==='admin'||CU.role==='subadmin';
   var ctx=isAdmin?_botTeamCtx(hoy):_botVendCtx(hoy,vn,getCarterasVend()).ctx;
   var sysPrompt=isAdmin
-    ?'Eres el asistente gerencial de Corporación La Roca. Analizas el rendimiento del equipo de vendedores y das recomendaciones de gestión. Sé directo, usa datos concretos y en español. '+ctx
-    :'Eres el asistente de ventas de Corporación La Roca. Ayudas a los vendedores con recomendaciones, seguimiento y motivación. Sé conciso, directo y en español. '+ctx;
+    ?'Eres el asistente gerencial de Corporación La Roca. Analizas el rendimiento del equipo y das recomendaciones. IMPORTANTE: responde en texto plano sin markdown — sin #, sin **, sin tablas, sin ---. Usa emojis y saltos de línea para organizar. Máximo 200 palabras, directo y concreto. En español. '+ctx
+    :'Eres el asistente de ventas de Corporación La Roca. Ayudas a los vendedores con recomendaciones y motivación. IMPORTANTE: responde en texto plano sin markdown — sin #, sin **, sin tablas. Usa emojis. Máximo 150 palabras, directo. En español. '+ctx;
   var msgs=_botHistory.slice(-8).map(function(m){return{role:m.role==='assistant'?'assistant':'user',content:m.content};});
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:500,system:sysPrompt,messages:msgs})
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,system:sysPrompt,messages:msgs})
   }).then(function(r){return r.json();})
   .then(function(d){
     botTyping(false);if(lbl)lbl.textContent='Listo para ayudarte';
