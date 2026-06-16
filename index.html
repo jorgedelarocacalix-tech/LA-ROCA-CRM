@@ -2994,16 +2994,42 @@ function botLoadInit(){
     var cids=getCarterasVend();
     var d=_botVendCtx(hoy,vn,cids);var st=d.st;var sinSeqCnt=d.sinSeqCnt;
     msg=sal+', <strong>'+vn+'</strong> 👋\n\nHoy llevas <strong>'+st.callsHoy+' gestión'+(st.callsHoy!==1?'es':'')+' </strong>.';
-    if(st.estancados.length){
-      msg+='\n\n🔴 <strong>Clientes urgentes ('+st.estancados.length+'):</strong>\n';
-      st.estancados.slice(0,5).forEach(function(e,i){msg+=(i+1)+'. <strong>'+e.nombre+'</strong> — '+(e.dias>=7?'🚨':'⚠️')+' '+e.dias+' días ('+e.etapa+')\n   💡 '+e.accion+'\n';});
-      if(st.estancados.length>5)msg+='\n...y '+(st.estancados.length-5)+' más.\n';
-    }else{msg+='\n\n✅ Sin clientes urgentes — ¡vas excelente!';}
-    if(sinSeqCnt>0)msg+='\n\n⏳ Tienes <strong>'+sinSeqCnt+' cliente'+(sinSeqCnt!==1?'s':'')+' sin primera gestión</strong> tuya.';
-    msg+='\n\n¿Quieres un <strong>plan para hoy</strong> o tienes alguna pregunta?';
-    sugs=['¿Qué hago primero hoy?','Dame un plan para hoy','¿Cómo abordo a un cliente que no contesta?','¿Qué frase uso con un cliente interesado?','¿Cómo cierro una venta hoy?'];
+    if(!st.estancados.length)msg+='\n\n✅ Sin clientes urgentes — ¡vas excelente!';
+    else msg+='\n\n Tienes <strong style="color:#c53030;">'+st.estancados.length+' cliente'+(st.estancados.length>1?'s':'')+' urgentes</strong>. Aquí están:';
+    if(sinSeqCnt>0)msg+='\n⏳ <strong>'+sinSeqCnt+'</strong> cliente'+(sinSeqCnt>1?'s':'')+' sin primera gestión tuya.';
+    sugs=['¿Qué hago primero hoy?','Dame un plan para hoy','¿Cómo genero confianza con un cliente?','¿Cómo cierro una venta hoy?'];
   }
   botBubble(msg,'bot');
+  var msgs2=document.getElementById('bot-msgs');
+  // Tarjetas de clientes urgentes para vendedor
+  if(!isAdmin&&msgs2){
+    var cids2=getCarterasVend();
+    var st2=_vendStats(vn,hoy,null);
+    var _porQueUrgente=function(e){
+      if(e.col==='negociando'&&e.dias>=7)return '🚨 Lleva '+e.dias+' días en negociación sin avanzar — puede decidirse por otro proveedor hoy.';
+      if(e.col==='negociando')return '⚠️ Está en proceso de decidir — cada día sin contacto enfría la decisión.';
+      if(e.col==='interesado'&&e.dias>=7)return '🚨 Mostró interés hace '+e.dias+' días — si no actúas hoy puede perder el interés o irse con la competencia.';
+      if(e.col==='interesado')return '⚠️ Expresó interés pero no hay seguimiento — necesita sentir que lo estás atendiendo.';
+      if(e.col==='ni2')return '⚠️ Lead caliente sin confirmar — está esperando que lo contactes para avanzar.';
+      if(e.col==='nn')return '🚨 Lead listo para cerrar — un mensaje hoy puede concretar la venta.';
+      return '⚠️ Sin contacto hace '+e.dias+' días — retoma la relación antes de que se enfríe.';
+    };
+    st2.estancados.slice(0,6).forEach(function(e){
+      var card=document.createElement('div');
+      card.style.cssText='background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:14px;padding:12px 14px;margin-bottom:2px;';
+      var urgColor=e.dias>=7?'#c53030':'#c05621';
+      var diasBg=e.dias>=7?'#fed7d7':'#fbd38d';
+      card.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+        +'<span style="font-size:13px;font-weight:700;color:#1a202c;flex:1;">'+e.nombre+'</span>'
+        +'<span style="background:'+diasBg+';color:'+urgColor+';font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">'+e.dias+'d · '+e.etapa+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:#553c9a;margin-bottom:8px;line-height:1.5;">'+_porQueUrgente(e)+'</div>'
+        +'<button style="background:linear-gradient(135deg,#9f7aea,#7c3aed);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">💬 ¿Qué le digo?</button>';
+      card.querySelector('button').addEventListener('click',(function(ec){return function(){botSpeechCliente(ec);};})(e));
+      msgs2.appendChild(card);
+    });
+    msgs2.scrollTop=msgs2.scrollHeight;
+  }
   var sd=document.createElement('div');
   sd.style.cssText='display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;';
   sugs.forEach(function(s){
@@ -3012,8 +3038,7 @@ function botLoadInit(){
     b.addEventListener('click',function(){var inp=document.getElementById('bot-inp');if(inp){inp.value=s;botSend();}sd.remove();});
     sd.appendChild(b);
   });
-  var msgs=document.getElementById('bot-msgs');
-  if(msgs){msgs.appendChild(sd);msgs.scrollTop=msgs.scrollHeight;}
+  if(msgs2){msgs2.appendChild(sd);msgs2.scrollTop=msgs2.scrollHeight;}
 }
 function botSend(){
   var inp=document.getElementById('bot-inp');if(!inp||!inp.value.trim())return;
@@ -3042,6 +3067,46 @@ function botSend(){
     botBubble((d.content&&d.content[0]&&d.content[0].text)||'Sin respuesta.','bot');
   })
   .catch(function(){botTyping(false);if(lbl)lbl.textContent='Listo para ayudarte';botBubble('No pude conectar. Verifica la API Key o tu conexión.','bot');});
+}
+function botSpeechCliente(e){
+  var vn=(CU.name||'').trim();
+  var prompt='Genera un speech de venta o mensaje de WhatsApp para el vendedor '+vn+' dirigido al cliente "'+e.nombre+'" de '+e.tienda+'. '
+    +'El cliente está en etapa "'+e.etapa+'" y lleva '+e.dias+' días sin contacto. '
+    +'El objetivo es crear confianza, generar necesidad y conseguir que avance hacia el cierre. '
+    +'Escribe el mensaje como si lo enviara el vendedor directamente (en primera persona). '
+    +'Que sea cálido, natural y persuasivo. Máximo 5 oraciones. Solo el mensaje, sin explicaciones.';
+  botBubble('¿Qué le digo a '+e.nombre+'?','user');
+  var _bk=CU&&(CU.role==='admin'||CU.role==='subadmin')?'AAAEpfJB-goz5rsBaFVoBDprjHqe-hSvqjSEjJAQ8ZaCdkQ29xc16xrNGkBQZ4fzAeFCBsZYae6VnC7iK0RAFZ6LedEq9lQ-30ipa-tna-ks'.split('').reverse().join(''):'';
+  var key=_bk||(localStorage.getItem('bot_claude_key')||'');
+  if(!key){botBubble('Necesitas configurar la API Key. Toca 🔑 arriba.','bot');return;}
+  botTyping(true);
+  var lbl=document.getElementById('bot-status-lbl');if(lbl)lbl.textContent='Generando mensaje...';
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:250,
+      system:'Eres experto en ventas consultivas para Corporación La Roca. Generas mensajes de venta que crean confianza y necesidad, naturales y sin presión excesiva. Solo en español.',
+      messages:[{role:'user',content:prompt}]})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    botTyping(false);if(lbl)lbl.textContent='Listo para ayudarte';
+    if(d.error){botBubble('Error: '+d.error.message,'bot');return;}
+    var txt=(d.content&&d.content[0]&&d.content[0].text)||'';
+    var wrap=document.createElement('div');
+    wrap.style.cssText='max-width:88%;';
+    var bubble=document.createElement('div');
+    bubble.style.cssText='background:#f5f0ff;border:1px solid #e9d5ff;border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:13px;line-height:1.6;color:#2d3748;white-space:pre-wrap;margin-bottom:6px;';
+    bubble.textContent=txt;
+    var copyBtn=document.createElement('button');
+    copyBtn.textContent='📋 Copiar mensaje';
+    copyBtn.style.cssText='background:#f0e6ff;border:1px solid #c4b5fd;border-radius:8px;padding:5px 12px;font-size:11px;color:#6d28d9;cursor:pointer;font-weight:700;';
+    copyBtn.addEventListener('click',function(){navigator.clipboard.writeText(txt).then(function(){copyBtn.textContent='✓ Copiado';setTimeout(function(){copyBtn.textContent='📋 Copiar mensaje';},2000);});});
+    wrap.appendChild(bubble);wrap.appendChild(copyBtn);
+    var msgs=document.getElementById('bot-msgs');
+    if(msgs){msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;}
+    _botHistory.push({role:'assistant',content:txt});
+  })
+  .catch(function(){botTyping(false);if(lbl)lbl.textContent='Listo para ayudarte';botBubble('No pude conectar.','bot');});
 }
 function botSetKey(){
   var cur=localStorage.getItem('bot_claude_key')||'';
