@@ -3057,7 +3057,12 @@ function botLoadInit(){
       inactivos.forEach(function(v){msg+='• '+v.name+(v.dago<999?' (última vez hace '+v.dago+'d)':' (sin historial)')+'\n';});
     }
     msg+='\n¿Qué quieres analizar?';
-    sugs=['Analiza el rendimiento del equipo','¿Quién necesita coaching urgente?','¿Quién va mejor hoy?','¿Qué vendedor tiene más urgentes?','Dame recomendaciones para el equipo'];
+    sugs=[
+      {cat:'📊 Equipo hoy',items:['¿Quién va mejor hoy?','¿Quién no ha gestionado nada?','Dame el ranking de hoy']},
+      {cat:'⚠️ Urgentes',items:['¿Qué vendedor tiene más urgentes?','¿Quién necesita ayuda urgente?','Lista los clientes más críticos']},
+      {cat:'🎯 Coaching',items:['¿Quién necesita coaching?','Dame recomendaciones para el equipo','¿Cómo mejorar el rendimiento?']},
+      {cat:'📈 Análisis',items:['Analiza el rendimiento del equipo','¿Qué tienda está rindiendo mejor?','¿Cómo vamos vs la semana pasada?']}
+    ];
   } else {
     var cids=getCarterasVend();
     var d=_botVendCtx(hoy,vn,cids);var st=d.st;var sinSeqCnt=d.sinSeqCnt;
@@ -3065,7 +3070,12 @@ function botLoadInit(){
     if(!st.estancados.length)msg+='\n\n✅ Sin clientes urgentes — ¡vas excelente!';
     else msg+='\n\n Tienes <strong style="color:#c53030;">'+st.estancados.length+' cliente'+(st.estancados.length>1?'s':'')+' urgentes</strong>. Aquí están:';
     if(sinSeqCnt>0)msg+='\n⏳ <strong>'+sinSeqCnt+'</strong> cliente'+(sinSeqCnt>1?'s':'')+' sin primera gestión tuya.';
-    sugs=['¿Qué hago primero hoy?','Dame un plan para hoy','¿Cómo genero confianza con un cliente?','¿Cómo cierro una venta hoy?'];
+    sugs=[
+      {cat:'🔥 Mi día',items:['¿Qué hago primero hoy?','¿A quién llamo primero?','Dame un plan para hoy']},
+      {cat:'💬 Scripts de venta',items:['¿Cómo inicio con un cliente frío?','¿Qué digo si dice que va a pensarlo?','¿Cómo cierro una venta hoy?']},
+      {cat:'🤝 Técnicas',items:['¿Cómo genero confianza con un cliente?','¿Cómo supero objeciones de precio?','¿Cómo hago seguimiento sin ser molesto?']},
+      {cat:'💪 Motivación',items:['Dame motivación para el día','¿Cómo mejorar mi rendimiento?','¿Qué puedo hacer diferente hoy?']}
+    ];
   }
   botBubble(msg,'bot');
   var msgs2=document.getElementById('bot-msgs');
@@ -3098,15 +3108,38 @@ function botLoadInit(){
     });
     msgs2.scrollTop=msgs2.scrollHeight;
   }
-  var sd=document.createElement('div');
-  sd.style.cssText='display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;';
-  sugs.forEach(function(s){
-    var b=document.createElement('button');b.textContent=s;
-    b.style.cssText='background:#f5f0ff;border:1px solid #c4b5fd;border-radius:20px;padding:6px 12px;font-size:11px;color:#6d28d9;cursor:pointer;font-weight:600;white-space:nowrap;';
-    b.addEventListener('click',function(){var inp=document.getElementById('bot-inp');if(inp){inp.value=s;botSend();}sd.remove();});
-    sd.appendChild(b);
-  });
-  if(msgs2){msgs2.appendChild(sd);msgs2.scrollTop=msgs2.scrollHeight;}
+  // Preguntas sugeridas por categoría
+  if(msgs2){
+    var catWrap=document.createElement('div');
+    catWrap.style.cssText='padding:4px 0 2px;';
+    var catLbl=document.createElement('div');
+    catLbl.style.cssText='font-size:11px;font-weight:700;color:#9f7aea;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;';
+    catLbl.textContent='💡 Puedes preguntarme:';
+    catWrap.appendChild(catLbl);
+    sugs.forEach(function(group){
+      var gl=document.createElement('div');
+      gl.style.cssText='font-size:10px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px;';
+      gl.textContent=group.cat;
+      catWrap.appendChild(gl);
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;flex-wrap:wrap;gap:5px;';
+      group.items.forEach(function(s){
+        var b=document.createElement('button');b.textContent=s;
+        b.style.cssText='background:#f5f0ff;border:1px solid #c4b5fd;border-radius:20px;padding:6px 12px;font-size:11px;color:#6d28d9;cursor:pointer;font-weight:600;white-space:nowrap;transition:all .12s;';
+        b.addEventListener('mouseenter',function(){b.style.background='#ede9fe';});
+        b.addEventListener('mouseleave',function(){b.style.background='#f5f0ff';});
+        b.addEventListener('click',function(){
+          var inp=document.getElementById('bot-inp');
+          if(inp){inp.value=s;botSend();}
+          catWrap.remove();
+        });
+        row.appendChild(b);
+      });
+      catWrap.appendChild(row);
+    });
+    msgs2.appendChild(catWrap);
+    msgs2.scrollTop=msgs2.scrollHeight;
+  }
 }
 function botSend(){
   var inp=document.getElementById('bot-inp');if(!inp||!inp.value.trim())return;
