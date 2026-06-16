@@ -3014,7 +3014,7 @@ function botLoadInit(){
       if(e.col==='nn')return '🚨 Lead listo para cerrar — un mensaje hoy puede concretar la venta.';
       return '⚠️ Sin contacto hace '+e.dias+' días — retoma la relación antes de que se enfríe.';
     };
-    st2.estancados.slice(0,6).forEach(function(e){
+    st2.estancados.forEach(function(e){
       var card=document.createElement('div');
       card.style.cssText='background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:14px;padding:12px 14px;margin-bottom:2px;';
       var urgColor=e.dias>=7?'#c53030':'#c05621';
