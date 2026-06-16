@@ -340,7 +340,7 @@ button{cursor:pointer}
 <div class="toast" id="toast"></div>
 
 <script>
-var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='sb_publishable_7O5xAYXC5H_OrYmTykIgyQ_hR3IkvCg';
+var SB_URL='https://upaenjotkocmdvfuobii.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwYWVuam90a29jbWR2ZnVvYmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjQzMzUsImV4cCI6MjA5NDQ0MDMzNX0.am0lcEwz4-HK0KvrPBtv1QB7joNYDpOuQNhbc1HjwZ8';
 var WA_URL=localStorage.getItem('wa_url')||'https://tassel-wasting-cesarean.ngrok-free.dev';
 var waConvs=[],waActivePhone=null,waActiveCanal='whatsapp',waFilter='todos',waEmpresaFilt='todas',waCanalFilt='todos',waPollingTimer=null,waPendingMasivo=[],_waConvsLoaded=false;
 function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':m==='POST'?'resolution=merge-duplicates':''},...(b?{body:JSON.stringify(b)}:{})}).then(function(r){if(!r.ok)return null;return(m||'GET')==='GET'?r.json():true;}).catch(function(){return null;});}
