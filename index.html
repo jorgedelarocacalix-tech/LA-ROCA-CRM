@@ -246,6 +246,9 @@ button{cursor:pointer}
       <button class="nb sm" onclick="pinClr()">Borrar</button><button class="nb" onclick="pi('0')">0</button><button class="nb sm" onclick="pinDel()">&#9003;</button>
     </div>
     <div class="lerr" id="lerr"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button onclick="limpiarCache()" style="background:none;border:none;color:var(--t3);font-size:12px;cursor:pointer;text-decoration:underline;padding:4px 8px;">🔄 ¿Problemas para entrar? Toca aquí</button>
+    </div>
   </div>
 </div>
 <!-- NOMBRE -->
@@ -595,6 +598,16 @@ function _mergeSupabaseUser(su){
   if(ex>=0)Object.assign(DB.users[ex],nu);else DB.users.push(nu);
   saveDB();
   return DB.users.find(function(x){return String(x.pin)===String(su.pin);});
+}
+function limpiarCache(){
+  try{
+    var keys=[];for(var i=0;i<localStorage.length;i++)keys.push(localStorage.key(i));
+    keys.forEach(function(k){if(k&&k.startsWith('lroca_'))localStorage.removeItem(k);});
+  }catch(e){}
+  caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}).catch(function(){});
+  navigator.serviceWorker&&navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});});
+  var lbl=document.getElementById('lerr');if(lbl){lbl.style.color='var(--green)';lbl.textContent='Caché limpiado. Recargando...';}
+  setTimeout(function(){location.reload(true);},1200);
 }
 function initLogin(){
   pinBuf='';renderPD();document.getElementById('lerr').textContent='';
