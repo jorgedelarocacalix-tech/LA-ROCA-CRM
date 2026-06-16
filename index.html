@@ -2941,9 +2941,7 @@ function _botTeamCtx(hoy){
   var seen=new Set();var lines=[];
   vendores.forEach(function(u){
     var k=u.name.trim().toLowerCase();if(seen.has(k))return;seen.add(k);
-    var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-    var cids=uc.filter(Boolean);
-    var st=_vendStats(u.name.trim(),hoy,cids.length?cids:null);
+    var st=_vendStats(u.name.trim(),hoy,null);
     if(!st.hasData)return;
     lines.push(u.name.trim()+': gestiones hoy='+st.callsHoy+', últGest hace '+st.dago+'d, urgentes='+st.estancados.length
       +(st.estancados.length?'('+st.estancados.slice(0,3).map(function(e){return e.nombre+' '+e.dias+'d';}).join(', ')+')':'')+'.');
@@ -2968,9 +2966,7 @@ function botLoadInit(){
     var seen=new Set();var activos=[],inactivos=[],conUrgentes=[];var totalHoy=0,totalUrg=0;
     vendores.forEach(function(u){
       var k=u.name.trim().toLowerCase();if(seen.has(k))return;seen.add(k);
-      var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-      var cids=uc.filter(Boolean);
-      var st=_vendStats(u.name.trim(),hoy,cids.length?cids:null);
+      var st=_vendStats(u.name.trim(),hoy,null);
       if(!st.hasData)return;
       totalHoy+=st.callsHoy;totalUrg+=st.estancados.length;
       if(st.callsHoy>0)activos.push({name:u.name.trim(),g:st.callsHoy,urg:st.estancados.length});
