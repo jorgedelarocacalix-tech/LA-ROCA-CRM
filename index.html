@@ -2936,35 +2936,84 @@ function botTyping(show){
     var msgs=document.getElementById('bot-msgs');if(msgs){msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
   }else if(!show&&el)el.remove();
 }
-function botLoadInit(){
-  var hoy=monFechaHN(0),vn=(CU.name||'').trim(),cids=getCarterasVend(),st=_vendStats(vn,hoy,cids);
+function _botTeamCtx(hoy){
+  var vendores=DB.users.filter(function(u){return(u.role==='vendedor'||u.role==='subadmin')&&u.name;});
+  var seen=new Set();var lines=[];
+  vendores.forEach(function(u){
+    var k=u.name.trim().toLowerCase();if(seen.has(k))return;seen.add(k);
+    var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
+    var cids=uc.filter(Boolean);
+    var st=_vendStats(u.name.trim(),hoy,cids.length?cids:null);
+    if(!st.hasData)return;
+    lines.push(u.name.trim()+': gestiones hoy='+st.callsHoy+', últGest hace '+st.dago+'d, urgentes='+st.estancados.length
+      +(st.estancados.length?'('+st.estancados.slice(0,3).map(function(e){return e.nombre+' '+e.dias+'d';}).join(', ')+')':'')+'.');
+  });
+  return lines.length?'Equipo hoy ('+hoy+'): '+lines.join(' | '):'Sin datos del equipo aún.';
+}
+function _botVendCtx(hoy,vn,cids){
+  var st=_vendStats(vn,hoy,cids);
   var myCalls=DB.calls.filter(function(c){return(c.userName||'').trim().toLowerCase()===vn.toLowerCase()&&cids.includes(c.carteraId);});
   var calledIds=new Set(myCalls.map(function(c){return c.clientId;}).filter(Boolean));
   var sinSeqCnt=0;cids.forEach(function(cid){(DB.clients[cid]||[]).forEach(function(c){if(!calledIds.has(c.id))sinSeqCnt++;});});
+  return{st:st,sinSeqCnt:sinSeqCnt,ctx:'Vendedor: '+vn+', hoy='+hoy+', gestiones='+st.callsHoy+', última hace '+st.dago+'d, urgentes='+st.estancados.length+(st.estancados.length?'('+st.estancados.slice(0,4).map(function(e){return e.nombre+' '+e.dias+'d '+e.etapa;}).join(', ')+')':'')+', sin 1ª gestión='+sinSeqCnt+'.'};
+}
+function botLoadInit(){
+  var hoy=monFechaHN(0),vn=(CU.name||'').trim();
   var hour=new Date().getHours();
   var sal=hour<12?'Buenos días':hour<18?'Buenas tardes':'Buenas noches';
-  var msg=sal+', <strong>'+vn+'</strong> 👋\n\nHoy llevas <strong>'+st.callsHoy+' gestión'+(st.callsHoy!==1?'es':'')+' </strong>.';
-  if(st.estancados.length){
-    msg+='\n\n🔴 <strong>Clientes urgentes ('+st.estancados.length+'):</strong>\n';
-    st.estancados.slice(0,5).forEach(function(e,i){
-      msg+=(i+1)+'. <strong>'+e.nombre+'</strong> — '+(e.dias>=7?'🚨':'⚠️')+' '+e.dias+' días ('+e.etapa+')\n   💡 '+e.accion+'\n';
+  var isAdmin=CU.role==='admin'||CU.role==='subadmin';
+  var msg,sugs;
+  if(isAdmin){
+    var vendores=DB.users.filter(function(u){return(u.role==='vendedor'||u.role==='subadmin')&&u.name;});
+    var seen=new Set();var activos=[],inactivos=[],conUrgentes=[];var totalHoy=0,totalUrg=0;
+    vendores.forEach(function(u){
+      var k=u.name.trim().toLowerCase();if(seen.has(k))return;seen.add(k);
+      var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
+      var cids=uc.filter(Boolean);
+      var st=_vendStats(u.name.trim(),hoy,cids.length?cids:null);
+      if(!st.hasData)return;
+      totalHoy+=st.callsHoy;totalUrg+=st.estancados.length;
+      if(st.callsHoy>0)activos.push({name:u.name.trim(),g:st.callsHoy,urg:st.estancados.length});
+      else inactivos.push({name:u.name.trim(),dago:st.dago});
+      if(st.estancados.length>0)conUrgentes.push({name:u.name.trim(),urg:st.estancados.length,top:st.estancados[0]});
     });
-    if(st.estancados.length>5)msg+='\n...y '+(st.estancados.length-5)+' más.\n';
-  }else{msg+='\n\n✅ Sin clientes urgentes — ¡vas excelente!';}
-  if(sinSeqCnt>0)msg+='\n\n⏳ Tienes <strong>'+sinSeqCnt+' cliente'+(sinSeqCnt!==1?'s':'')+' sin primera gestión</strong> tuya en la cartera.';
-  msg+='\n\n¿Quieres un <strong>plan para hoy</strong> o tienes alguna pregunta?';
+    activos.sort(function(a,b){return b.g-a.g;});
+    msg=sal+', <strong>'+vn+'</strong> 👋\n\n';
+    msg+='📊 <strong>Resumen del equipo hoy:</strong>\n';
+    msg+='• Gestiones totales: <strong>'+totalHoy+'</strong>\n';
+    msg+='• Vendedores activos: <strong>'+activos.length+'</strong>';
+    if(inactivos.length)msg+=' · Sin gestionar: <strong style="color:#c53030;">'+inactivos.length+'</strong>';
+    msg+='\n• Clientes urgentes: <strong style="color:#c53030;">'+totalUrg+'</strong>\n';
+    if(activos.length){
+      msg+='\n🏆 <strong>Ranking hoy:</strong>\n';
+      activos.slice(0,5).forEach(function(v,i){msg+=(i+1)+'. '+v.name+' — '+v.g+' gestiones'+(v.urg?' ⚠️ '+v.urg+' urgentes':'')+'\n';});
+    }
+    if(inactivos.length){
+      msg+='\n🔴 <strong>Sin actividad hoy:</strong>\n';
+      inactivos.forEach(function(v){msg+='• '+v.name+(v.dago<999?' (última vez hace '+v.dago+'d)':' (sin historial)')+'\n';});
+    }
+    msg+='\n¿Qué quieres analizar?';
+    sugs=['Analiza el rendimiento del equipo','¿Quién necesita coaching urgente?','¿Quién va mejor hoy?','¿Qué vendedor tiene más urgentes?','Dame recomendaciones para el equipo'];
+  } else {
+    var cids=getCarterasVend();
+    var d=_botVendCtx(hoy,vn,cids);var st=d.st;var sinSeqCnt=d.sinSeqCnt;
+    msg=sal+', <strong>'+vn+'</strong> 👋\n\nHoy llevas <strong>'+st.callsHoy+' gestión'+(st.callsHoy!==1?'es':'')+' </strong>.';
+    if(st.estancados.length){
+      msg+='\n\n🔴 <strong>Clientes urgentes ('+st.estancados.length+'):</strong>\n';
+      st.estancados.slice(0,5).forEach(function(e,i){msg+=(i+1)+'. <strong>'+e.nombre+'</strong> — '+(e.dias>=7?'🚨':'⚠️')+' '+e.dias+' días ('+e.etapa+')\n   💡 '+e.accion+'\n';});
+      if(st.estancados.length>5)msg+='\n...y '+(st.estancados.length-5)+' más.\n';
+    }else{msg+='\n\n✅ Sin clientes urgentes — ¡vas excelente!';}
+    if(sinSeqCnt>0)msg+='\n\n⏳ Tienes <strong>'+sinSeqCnt+' cliente'+(sinSeqCnt!==1?'s':'')+' sin primera gestión</strong> tuya.';
+    msg+='\n\n¿Quieres un <strong>plan para hoy</strong> o tienes alguna pregunta?';
+    sugs=['¿Qué hago primero hoy?','Dame un plan para hoy','¿Cómo abordo a un cliente que no contesta?','¿Qué frase uso con un cliente interesado?','¿Cómo cierro una venta hoy?'];
+  }
   botBubble(msg,'bot');
-  var sugs=['¿Qué hago primero hoy?','Dame un plan para hoy','¿Cómo abordo a un cliente que no contesta?','¿Qué frase uso con un cliente interesado?','¿Cómo cierro una venta hoy?'];
   var sd=document.createElement('div');
   sd.style.cssText='display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;';
   sugs.forEach(function(s){
-    var b=document.createElement('button');
-    b.textContent=s;
+    var b=document.createElement('button');b.textContent=s;
     b.style.cssText='background:#f5f0ff;border:1px solid #c4b5fd;border-radius:20px;padding:6px 12px;font-size:11px;color:#6d28d9;cursor:pointer;font-weight:600;white-space:nowrap;';
-    b.addEventListener('click',function(){
-      var inp=document.getElementById('bot-inp');if(inp){inp.value=s;botSend();}
-      sd.remove();
-    });
+    b.addEventListener('click',function(){var inp=document.getElementById('bot-inp');if(inp){inp.value=s;botSend();}sd.remove();});
     sd.appendChild(b);
   });
   var msgs=document.getElementById('bot-msgs');
@@ -2979,19 +3028,17 @@ function botSend(){
   if(!key){botBubble('Para responder necesito una API Key de Claude. Toca 🔑 en la barra superior para configurarla.','bot');return;}
   botTyping(true);
   var lbl=document.getElementById('bot-status-lbl');if(lbl)lbl.textContent='Pensando...';
-  var hoy=monFechaHN(0),vn=(CU.name||'').trim(),cids=getCarterasVend(),st=_vendStats(vn,hoy,cids);
-  var myCalls=DB.calls.filter(function(c){return(c.userName||'').trim().toLowerCase()===vn.toLowerCase()&&cids.includes(c.carteraId);});
-  var calledIds=new Set(myCalls.map(function(c){return c.clientId;}).filter(Boolean));
-  var sinSeqCnt=0;cids.forEach(function(cid){(DB.clients[cid]||[]).forEach(function(c){if(!calledIds.has(c.id))sinSeqCnt++;});});
-  var ctx='Datos del vendedor '+vn+' hoy '+hoy+': gestiones='+st.callsHoy+', última gestión hace '+st.dago+' días, urgentes='+st.estancados.length
-    +(st.estancados.length?'('+st.estancados.slice(0,4).map(function(e){return e.nombre+' '+e.dias+'d '+e.etapa;}).join(', ')+')':'')+', sin gestión mía='+sinSeqCnt+'.';
+  var hoy=monFechaHN(0),vn=(CU.name||'').trim();
+  var isAdmin=CU.role==='admin'||CU.role==='subadmin';
+  var ctx=isAdmin?_botTeamCtx(hoy):_botVendCtx(hoy,vn,getCarterasVend()).ctx;
+  var sysPrompt=isAdmin
+    ?'Eres el asistente gerencial de Corporación La Roca. Analizas el rendimiento del equipo de vendedores y das recomendaciones de gestión. Sé directo, usa datos concretos y en español. '+ctx
+    :'Eres el asistente de ventas de Corporación La Roca. Ayudas a los vendedores con recomendaciones, seguimiento y motivación. Sé conciso, directo y en español. '+ctx;
   var msgs=_botHistory.slice(-8).map(function(m){return{role:m.role==='assistant'?'assistant':'user',content:m.content};});
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:400,
-      system:'Eres el asistente de ventas de Corporación La Roca. Ayudas a los vendedores con recomendaciones, seguimiento y motivación. Sé conciso, directo y en español. '+ctx,
-      messages:msgs})
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:500,system:sysPrompt,messages:msgs})
   }).then(function(r){return r.json();})
   .then(function(d){
     botTyping(false);if(lbl)lbl.textContent='Listo para ayudarte';
