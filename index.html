@@ -1746,7 +1746,7 @@ function renderKanban(){
     +'</div>';
     return;
   }
-  var isMobile=window.innerWidth<=780;
+  var isMobile=window.matchMedia('(max-width:780px)').matches;
   if(!kbMobCol||!board.cols.find(function(c){return c.id===kbMobCol;}))kbMobCol=board.cols[0].id;
 
   function _kbCardHtml(c,kbClass,nameCls,telCls,subCls,noteCls){
