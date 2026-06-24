@@ -409,7 +409,7 @@ function loadFromSB(){
         if(isHardcoded){
           // Hardcoded user: keep hardcoded cartera, just update name
           var idx2=merged.findIndex(function(h){return h.pin===su.pin;});
-          if(idx2>=0)merged[idx2].name=su.name;
+          if(idx2>=0&&su.name)merged[idx2].name=su.name;
         } else {
           // New user from UI: use SB cartera
           var ex2=merged.findIndex(function(x){return x.id===su.id;});
@@ -1719,11 +1719,12 @@ function renderKanban(){
   } else {
     cids=kbActiveCart?[kbActiveCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
     // For vendedor: always filter to their own calls only
-    var kbVendNorm=kbSelVend?(kbSelVend.trim().toLowerCase()):
-      (CU.role==='vendedor'?CU.name.trim().toLowerCase():null);
+    var kbVendNorm=kbSelVend?(kbSelVend.trim().toLowerCase()||null):
+      (CU.role==='vendedor'?((CU.name||'').trim().toLowerCase()||null):null);
     var callsF=DB.calls.filter(function(c){
       if(!cids.includes(c.carteraId))return false;
-      if(!kbVendNorm)return true;
+      if(kbVendNorm===null)return true; // admin sin filtro: todas las gestiones
+      if(!kbVendNorm)return false;      // vendedor sin nombre: no mostrar nada (seguro)
       var cn=(c.userName||c.userId||'').trim().toLowerCase();
       return cn===kbVendNorm;
     });
