@@ -221,6 +221,15 @@ button{cursor:pointer}
 .wa-stbadge{font-size:13px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .wa-st-interesado{background:var(--greenl);color:#276749}.wa-st-no_interesado{background:var(--redl);color:#c53030}.wa-st-enviado{background:var(--bluel);color:var(--blue2)}.wa-st-pregunta{background:var(--amberl);color:#c05621}
 @media(max-width:780px){.wa-wrap{height:calc(100vh - 60px);border-radius:0;position:relative}.wa-side{width:100%;position:absolute;inset:0;z-index:2}.wa-chat{position:absolute;inset:0;z-index:1;display:none}.wa-wrap.wa-open .wa-chat{display:flex}.wa-wrap.wa-open .wa-side{display:none}}
+.kb-mob-cols{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.kb-mob-cols::-webkit-scrollbar{display:none}
+.kb-mob-pill{flex-shrink:0;padding:8px 16px;border-radius:24px;font-size:13px;font-weight:600;border:2px solid #e2e8f0;background:#f7f9fc;color:#718096;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.kb-mob-pill.on{border-color:currentColor;background:var(--bluel)}
+.kb-mob-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 4px rgba(0,0,0,.06);active:background:#f0f4ff}
+.kb-mob-card-name{font-size:16px;font-weight:700;color:var(--t1)}
+.kb-mob-card-tel{font-size:14px;color:#276749}
+.kb-mob-card-sub{font-size:13px;color:var(--t2)}
+.kb-mob-card-note{font-size:12px;color:var(--t3);font-style:italic}
 /* ── Accesibilidad: escalar fuentes inline pequeñas ── */
 [style*="font-size:10px"]{font-size:14px!important}
 [style*="font-size:11px"]{font-size:14px!important}
@@ -504,7 +513,7 @@ function initDB(){var d={users:initDB_users(),carteras:[
 
 var DB=loadDB(),CU=null,CCI=null,pinBuf='',activeCat='all',activeYear='todos',activeCart=null;
 var calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
-var dragClient=null,activeBoard='recompra',kbActiveCart=null,kbSelVend=null;
+var dragClient=null,activeBoard='recompra',kbActiveCart=null,kbSelVend=null,kbMobCol=null;
 var activeDash='todos',dashCart=null,dashSelVend=null;
 var segCart=null,segSelVend=null;
 var pendingFile=null,selCartId=null,clientPage=0,clientsPerPage=100;
@@ -1737,35 +1746,62 @@ function renderKanban(){
     +'</div>';
     return;
   }
-  var h='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero</div><div class="kanban-wrap"><div class="kanban-board">';
-  board.cols.forEach(function(col){
-    var cc=colMap[col.id]||[];
-    h+='<div class="kb-col" data-col="'+col.id+'" data-field="'+colField+'" ondragover="kbDO(event,this)" ondrop="kbDrop(event,this)" ondragleave="kbDL(event,this)">';
-    h+='<div class="kb-col-hdr" style="border-top:4px solid '+col.color+';"><span class="kb-col-ttl" style="color:'+col.color+';">'+col.name+'</span><span class="kb-count" style="background:'+col.bg+';color:'+col.color+';">'+cc.length+'</span></div>';
-    h+='<div class="kb-col-body">';
-    if(!cc.length)h+='<div class="kb-empty">Arrastra aquí o registra una gestión</div>';
-    cc.forEach(function(c){
-      var lc=DB.calls.filter(function(x){return x.clientId===c.id;}).slice(-1)[0];
-      var lastCom=(c.kbComments||[]).slice(-1)[0];
-      var kbVend=isLead?null:getActiveVendedor(c.id);
-      var kbBlocked=kbVend!==null;
-      h+='<div class="kb-card'+(kbBlocked?' kb-card-blocked':'')+'" draggable="true" data-cid="'+(c._cid||'')+'" data-id="'+c.id+'" data-islead="'+(isLead?'1':'0')+'" ondragstart="kbDS(event,this)" ondragend="kbDE(event,this)" onclick="openKbCard(this)" style="'+(kbBlocked?'border-color:#fed7d7;opacity:.75;':'')+'">';
-      if(kbBlocked)h+='<div style="font-size:9px;font-weight:700;color:#c53030;margin-bottom:4px;">🔒 '+kbVend+'</div>';
-      h+='<div class="kb-card-name">'+c.nombre+'</div>';
-      if(c.telefono)h+='<div class="kb-card-tel">📞 '+c.telefono+'</div>';
-      if(c.fuente)h+='<div class="kb-card-sub" style="color:var(--blue);">'+c.fuente+'</div>';
-      if(isLead&&c.assignedTo)h+='<div style="font-size:10px;font-weight:700;color:#6b46c1;margin-top:2px;">👤 '+c.assignedTo+'</div>';
-      else if(isLead)h+='<div style="font-size:10px;color:#a0aec0;margin-top:2px;">👤 Sin asignar</div>';
-      if(!isLead&&c.antiguedad)h+='<div class="kb-card-sub">'+( c.antiguedad||0)+'m · L '+fmt(c.montoTotal||0)+'</div>';
-      if(lastCom)h+='<div class="kb-card-note">💬 '+lastCom.fecha.split(' ')[0]+' — '+lastCom.texto.slice(0,40)+'</div>';
-      else if(lc)h+='<div class="kb-card-note">'+lc.resultado.replace(/-/g,' ')+'</div>';
-      var _waC=c.telefono?waConvs.find(function(wc){return wc.telefono===c.telefono;}):null;
-      if(_waC){var _waColors={interesado:'#276749',no_interesado:'#c53030',enviado:'#2b6cb0',pregunta:'#c05621',entrante:'#553c9a'};var _waLabels={interesado:'✅ Interesado',no_interesado:'❌ Caída',enviado:'📤 Enviado',pregunta:'❓ Pregunta',entrante:'📩 Nuevo'};var _waCl=_waColors[_waC.estado]||'#718096';var _waLb=_waLabels[_waC.estado]||_waC.estado;h+='<div style="margin-top:5px;padding:4px 7px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;font-size:10px;display:flex;align-items:center;gap:4px;overflow:hidden;cursor:pointer;" onclick="event.stopPropagation();goTo(\'whatsapp\');setTimeout(function(){waOpenConv(\''+c.telefono.replace(/'/g,"\\'")+'\')}  ,400)">'+'<span style="flex-shrink:0;">💬</span><span style="color:'+_waCl+';font-weight:700;flex-shrink:0;">'+_waLb+'</span>'+(_waC.ultimo_mensaje?'<span style="color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"> · '+(_waC.ultimo_mensaje||'').slice(0,22)+'</span>':'')+'</div>';}
-      h+='</div>';
+  var isMobile=window.innerWidth<=780;
+  if(!kbMobCol||!board.cols.find(function(c){return c.id===kbMobCol;}))kbMobCol=board.cols[0].id;
+
+  function _kbCardHtml(c,kbClass,nameCls,telCls,subCls,noteCls){
+    var lc=DB.calls.filter(function(x){return x.clientId===c.id;}).slice(-1)[0];
+    var lastCom=(c.kbComments||[]).slice(-1)[0];
+    var kbVend=isLead?null:getActiveVendedor(c.id);
+    var kbBlocked=kbVend!==null;
+    var h2='<div class="'+kbClass+'" data-cid="'+(c._cid||'')+'" data-id="'+c.id+'" data-islead="'+(isLead?'1':'0')+'" onclick="openKbCard(this)"'+(kbBlocked?' style="border-color:#fed7d7;opacity:.75;"':'')+' draggable="'+(isMobile?'false':'true')+'" ondragstart="kbDS(event,this)" ondragend="kbDE(event,this)">';
+    if(kbBlocked)h2+='<div style="font-size:11px;font-weight:700;color:#c53030;margin-bottom:4px;">🔒 '+kbVend+'</div>';
+    h2+='<div class="'+nameCls+'">'+c.nombre+'</div>';
+    if(c.telefono)h2+='<div class="'+telCls+'">📞 '+c.telefono+'</div>';
+    if(c.fuente)h2+='<div class="'+subCls+'" style="color:var(--blue);">'+c.fuente+'</div>';
+    if(isLead&&c.assignedTo)h2+='<div style="font-size:12px;font-weight:700;color:#6b46c1;margin-top:2px;">👤 '+c.assignedTo+'</div>';
+    else if(isLead)h2+='<div style="font-size:12px;color:#a0aec0;margin-top:2px;">👤 Sin asignar</div>';
+    if(!isLead&&c.antiguedad)h2+='<div class="'+subCls+'">'+( c.antiguedad||0)+'m · L '+fmt(c.montoTotal||0)+'</div>';
+    if(lastCom)h2+='<div class="'+noteCls+'">💬 '+lastCom.fecha.split(' ')[0]+' — '+lastCom.texto.slice(0,40)+'</div>';
+    else if(lc)h2+='<div class="'+noteCls+'">'+lc.resultado.replace(/-/g,' ')+'</div>';
+    var _waC=c.telefono?waConvs.find(function(wc){return wc.telefono===c.telefono;}):null;
+    if(_waC){var _waColors={interesado:'#276749',no_interesado:'#c53030',enviado:'#2b6cb0',pregunta:'#c05621',entrante:'#553c9a'};var _waLabels={interesado:'✅ Interesado',no_interesado:'❌ Caída',enviado:'📤 Enviado',pregunta:'❓ Pregunta',entrante:'📩 Nuevo'};var _waCl=_waColors[_waC.estado]||'#718096';var _waLb=_waLabels[_waC.estado]||_waC.estado;h2+='<div style="margin-top:5px;padding:4px 7px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;font-size:11px;display:flex;align-items:center;gap:4px;overflow:hidden;cursor:pointer;" onclick="event.stopPropagation();goTo(\'whatsapp\');setTimeout(function(){waOpenConv(\''+c.telefono.replace(/'/g,"\\'")+'\')}  ,400)">'+'<span style="flex-shrink:0;">💬</span><span style="color:'+_waCl+';font-weight:700;flex-shrink:0;">'+_waLb+'</span>'+(_waC.ultimo_mensaje?'<span style="color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"> · '+(_waC.ultimo_mensaje||'').slice(0,22)+'</span>':'')+'</div>';}
+    h2+='</div>';
+    return h2;
+  }
+
+  if(isMobile){
+    // VISTA MÓVIL: pills de columnas + lista vertical
+    var h='<div style="font-size:14px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes</div>';
+    h+='<div class="kb-mob-cols">';
+    board.cols.forEach(function(col){
+      var cc=colMap[col.id]||[];
+      var on=kbMobCol===col.id;
+      h+='<div class="kb-mob-pill'+(on?' on':'')+'" style="color:'+col.color+';'+(on?'background:'+col.bg+';border-color:'+col.color+';':'')+'" onclick="kbMobCol=\''+col.id+'\';renderKanban();">';
+      h+=col.name+'<span style="background:'+(on?col.color:'#e2e8f0')+';color:'+(on?'#fff':col.color)+';border-radius:12px;padding:1px 8px;font-size:12px;">'+cc.length+'</span></div>';
     });
-    h+='</div></div>';
-  });
-  h+='</div></div>';kbc.innerHTML=h;
+    h+='</div>';
+    var activeCc=colMap[kbMobCol]||[];
+    var activeCol=board.cols.find(function(c){return c.id===kbMobCol;})||board.cols[0];
+    h+='<div style="border-top:3px solid '+activeCol.color+';padding-top:12px;">';
+    if(!activeCc.length)h+='<div style="text-align:center;padding:32px;color:var(--t3);font-size:14px;">Sin clientes en esta etapa</div>';
+    activeCc.forEach(function(c){h+=_kbCardHtml(c,'kb-mob-card','kb-mob-card-name','kb-mob-card-tel','kb-mob-card-sub','kb-mob-card-note');});
+    h+='</div>';
+    kbc.innerHTML=h;
+  } else {
+    // VISTA ESCRITORIO: columnas horizontales
+    var h='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero</div><div class="kanban-wrap"><div class="kanban-board">';
+    board.cols.forEach(function(col){
+      var cc=colMap[col.id]||[];
+      h+='<div class="kb-col" data-col="'+col.id+'" data-field="'+colField+'" ondragover="kbDO(event,this)" ondrop="kbDrop(event,this)" ondragleave="kbDL(event,this)">';
+      h+='<div class="kb-col-hdr" style="border-top:4px solid '+col.color+';"><span class="kb-col-ttl" style="color:'+col.color+';">'+col.name+'</span><span class="kb-count" style="background:'+col.bg+';color:'+col.color+';">'+cc.length+'</span></div>';
+      h+='<div class="kb-col-body">';
+      if(!cc.length)h+='<div class="kb-empty">Arrastra aquí o registra una gestión</div>';
+      cc.forEach(function(c){h+=_kbCardHtml(c,'kb-card'+(getActiveVendedor&&getActiveVendedor(c.id)?'  kb-card-blocked':''),'kb-card-name','kb-card-tel','kb-card-sub','kb-card-note');});
+      h+='</div></div>';
+    });
+    h+='</div></div>';kbc.innerHTML=h;
+  }
 }
 function kbDS(e,el){dragClient={cid:el.dataset.cid,id:el.dataset.id,isLead:el.dataset.islead==='1'};el.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
 function kbDE(e,el){el.classList.remove('dragging');}
