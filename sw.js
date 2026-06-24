@@ -1,5 +1,5 @@
-// Service Worker v2.5 — sin caché, no intercepta requests externos
-var CACHE_NAME = 'laroca-crm-v2.5';
+// Service Worker v2.6 — sin caché, no intercepta requests externos
+var CACHE_NAME = 'laroca-crm-v2.6';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
