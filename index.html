@@ -1747,7 +1747,8 @@ function renderKanban(){
     +'</div>';
     return;
   }
-  var h='<div class="kb-rotate-hint">📱↔️ Gira el celular horizontalmente para ver mejor el tablero</div>';
+  var _isMob=window.innerWidth<900||('ontouchstart' in window&&window.innerWidth<1100);
+  var h=_isMob?'<div style="display:flex;align-items:center;gap:8px;background:#fff8e1;border:1.5px solid #f6c94e;border-radius:10px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px;font-weight:500;">📱↔️ Desliza a los lados para ver todas las etapas · Toca una tarjeta para moverla de etapa</div>':'';
   h+='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero</div><div class="kanban-wrap"><div class="kanban-board">';
   board.cols.forEach(function(col){
     var cc=colMap[col.id]||[];
