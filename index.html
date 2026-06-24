@@ -741,7 +741,7 @@ function goTo(view){
   var pc=document.getElementById('pcontent');
   if(view==='dashboard'){pc.innerHTML=vDash();renderDashCharts();}
   else if(view==='clientes'){pc.innerHTML=vClientes();renderCards();}
-  else if(view==='kanban'){pc.innerHTML=vKanban();if(!_waConvsLoaded){waRefreshConvs(function(){renderKanban();});}else{renderKanban();}if('ontouchstart' in window&&!sessionStorage.getItem('kb_hint')){sessionStorage.setItem('kb_hint','1');setTimeout(function(){toast('📱↔️ Rota el celular para mejor uso del tablero','ok');},600);}}
+  else if(view==='kanban'){pc.innerHTML=vKanban();renderKanban();if(!_waConvsLoaded){waRefreshConvs(function(){renderKanban();});}if('ontouchstart' in window&&!sessionStorage.getItem('kb_hint')){sessionStorage.setItem('kb_hint','1');setTimeout(function(){toast('📱 Para mejor vista, gira el celular horizontal','ok');},800);}}
   else if(view==='seguimiento'){pc.innerHTML=vSeg();renderSeg();}
   else if(view==='subir'){pc.innerHTML=vSubir();initUpload();}
   else if(view==='equipo'){pc.innerHTML=vEquipo();}else if(view==='monitor'){pc.innerHTML=vMonitor();initMonitor();}
@@ -1752,7 +1752,8 @@ function renderKanban(){
   }
   var _isMob=window.innerWidth<900||('ontouchstart' in window&&window.innerWidth<1100);
   var h=_isMob?'<div style="display:flex;align-items:center;gap:8px;background:#fff8e1;border:1.5px solid #f6c94e;border-radius:10px;padding:10px 14px;font-size:13px;color:#7a5c00;margin-bottom:12px;font-weight:500;">📱↔️ Desliza a los lados para ver todas las etapas · Toca una tarjeta para moverla de etapa</div>':'';
-  h+='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero</div><div class="kanban-wrap"><div class="kanban-board">';
+  var _kbOwner=CU.role==='vendedor'?' · Solo clientes de '+CU.name:'';
+  h+='<div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:500;">'+pool.length+' clientes en el tablero'+_kbOwner+'</div><div class="kanban-wrap"><div class="kanban-board">';
   board.cols.forEach(function(col){
     var cc=colMap[col.id]||[];
     h+='<div class="kb-col" data-col="'+col.id+'" data-field="'+colField+'" ondragover="kbDO(event,this)" ondrop="kbDrop(event,this)" ondragleave="kbDL(event,this)">';
