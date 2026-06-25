@@ -2123,8 +2123,8 @@ function renderSeg(){renderSegSum();renderSegCharts();renderCal();}
 function renderSegSum(){
   var el=document.getElementById('seg-sum');if(!el)return;
   var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
-  var today=new Date().toISOString().slice(0,10);
-  var calls=DB.calls.filter(function(c){return cids.includes(c.carteraId)&&(!segSelVend||(c.userName||c.userId||'').trim().toLowerCase()===segSelVend.trim().toLowerCase());});
+  var today=monFechaHN(0);
+  var calls=DB.calls.filter(function(c){return c.estado!=='actividad'&&cids.includes(c.carteraId)&&(!segSelVend||(c.userName||c.userId||'').trim().toLowerCase()===segSelVend.trim().toLowerCase());});
   var vSum={};calls.forEach(function(call){var k=call.userName||call.userId;if(!vSum[k]){var cart=DB.carteras.find(function(c){return c.id===call.carteraId;});vSum[k]={name:k,cartera:cart?cart.name:'',total:0,hoy:0};}vSum[k].total++;if((call.dateISO||'')===today)vSum[k].hoy++;});
   var rows=Object.values(vSum).sort(function(a,b){return b.hoy-a.hoy||b.total-a.total;});
   if(!rows.length){el.innerHTML='<div class="notice">⚠️ Sin gestiones registradas aún.</div>';return;}
@@ -2146,7 +2146,7 @@ function renderSegSum(){
 function renderSegCharts(){
   var c1=document.getElementById('ch-sv'),c2=document.getElementById('ch-sr');if(!c1||!c2)return;
   var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
-  var calls=DB.calls.filter(function(c){if(!cids.includes(c.carteraId))return false;if(segSelVend&&(c.userName||c.userId||'').trim().toLowerCase()!==segSelVend.trim().toLowerCase())return false;var d=gcd(c);return d&&d.getMonth()===calMonth&&d.getFullYear()===calYear;});
+  var calls=DB.calls.filter(function(c){if(c.estado==='actividad')return false;if(!cids.includes(c.carteraId))return false;if(segSelVend&&(c.userName||c.userId||'').trim().toLowerCase()!==segSelVend.trim().toLowerCase())return false;var d=gcd(c);return d&&d.getMonth()===calMonth&&d.getFullYear()===calYear;});
   var vMap={};calls.forEach(function(c){var k=c.userName||c.userId;vMap[k]=(vMap[k]||0)+1;});var vKeys=Object.keys(vMap).sort(function(a,b){return vMap[b]-vMap[a];});
   if(window._chsv)window._chsv.destroy();
   window._chsv=new Chart(c1,{type:'bar',data:{labels:vKeys,datasets:[{label:'Gestiones',data:vKeys.map(function(k){return vMap[k];}),backgroundColor:vKeys.map(function(_,i){return['#5b8dee','#48bb78','#ed8936','#9f7aea','#38b2ac','#fc8181'][i%6];}),borderRadius:10,borderSkipped:false}]},options:{onClick:function(e,items){if(items.length)openVendDetail(vKeys[items[0].index]);},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw+' gestiones — clic para ver detalle';}}}},scales:{y:{beginAtZero:true,grid:{color:'#eef2f7'}},x:{grid:{display:false}}}}});
@@ -2163,7 +2163,7 @@ function renderCal(){
   var today=new Date();var firstDay=new Date(calYear,calMonth,1).getDay();var daysInM=new Date(calYear,calMonth+1,0).getDate();
   var cids=segCart?[segCart]:(CU.role==='vendedor'?getCarterasVend():DB.carteras.map(function(x){return x.id;}));
   var byDay={};
-  DB.calls.filter(function(c){return cids.includes(c.carteraId)&&(!segSelVend||(c.userName||c.userId||'').trim().toLowerCase()===segSelVend.trim().toLowerCase());}).forEach(function(call){var d=gcd(call);if(!d||d.getFullYear()!==calYear||d.getMonth()!==calMonth)return;var day=d.getDate();if(!byDay[day])byDay[day]=[];byDay[day].push(call);});
+  DB.calls.filter(function(c){return c.estado!=='actividad'&&cids.includes(c.carteraId)&&(!segSelVend||(c.userName||c.userId||'').trim().toLowerCase()===segSelVend.trim().toLowerCase());}).forEach(function(call){var d=gcd(call);if(!d||d.getFullYear()!==calYear||d.getMonth()!==calMonth)return;var day=d.getDate();if(!byDay[day])byDay[day]=[];byDay[day].push(call);});
   var days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   var h=days.map(function(d){return '<div class="cal-hdr">'+d+'</div>';}).join('');
   for(var i=0;i<firstDay;i++)h+='<div class="cal-day empty"></div>';
