@@ -2315,6 +2315,7 @@ function vMonitor(){
     '<span id="mon-dia-label" style="font-size:12px;color:var(--blue);font-weight:700;min-width:120px;text-align:center;">—</span>'+
     '<button onclick="monNav(1)" style="background:var(--card);border:1.5px solid var(--border);color:var(--t2);padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;">Siguiente ›</button>'+
     '<button onclick="monHoy()" style="background:var(--blue);border:none;color:#fff;padding:6px 14px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:600;">Hoy</button>'+
+    '<button onclick="monRefresh()" id="mon-refresh-btn" style="background:var(--card);border:1.5px solid var(--border);color:var(--t2);padding:6px 12px;border-radius:var(--r);cursor:pointer;font-size:16px;line-height:1;" title="Actualizar datos">↻</button>'+
     '</div></div>'+
     '<div id="mon-res" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;"></div>'+
     '<div id="mon-sec-a" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:14px 0 10px;display:flex;align-items:center;gap:8px;">✅ Trabajaron hoy <span style="flex:1;height:1px;background:var(--border);display:block;"></span></div>'+
@@ -2327,6 +2328,7 @@ function vMonitor(){
 var monOffset=0;
 function monNav(d){monOffset+=d;loadMonitor();}
 function monHoy(){monOffset=0;loadMonitor();}
+function monRefresh(){var btn=document.getElementById('mon-refresh-btn');if(btn){btn.style.transform='rotate(360deg)';btn.style.transition='transform .5s';setTimeout(function(){btn.style.transform='';btn.style.transition='';},600);}loadFromSB().then(loadMonitor);}
 
 function monFechaHN(offset){
   // Honduras = UTC-6 siempre (no cambia horario)
@@ -2636,14 +2638,6 @@ async function loadMonitor(){
     var ultTxt=!ultIso?'Nunca ingresó':dago===0?'Hoy':dago===1?'Ayer':'Hace '+dago+' días';
     var ultCol=!ultIso||dago>4?'#dc2626':dago>1?'#d97706':'#16a34a';
 
-    // Tags de actividad extra (leads, comentarios, kanban)
-    var actLines='';
-    if(g&&g.tipos){
-      if(g.tipos['Lead nuevo'])actLines+='<span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">✨ '+g.tipos['Lead nuevo']+' leads</span>';
-      if(g.tipos['Kanban recompra'])actLines+=' <span style="display:inline-flex;align-items:center;gap:4px;background:#ede9fe;color:#6d28d9;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">🔄 '+g.tipos['Kanban recompra']+'</span>';
-      if(g.tipos['Comentario'])actLines+=' <span style="display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">💬 '+g.tipos['Comentario']+'</span>';
-    }
-
     return '<div style="background:'+cardBg+';border:2px solid '+cardBorder+';border-radius:14px;padding:0;cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="openMonDetalle(\''+v.name+'\')">' +
       // Cabecera con nombre y estado
       '<div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center;">'+
@@ -2665,22 +2659,28 @@ async function loadMonitor(){
         '</div>'+
       '</div>'+
       // Stats secundarios
-      '<div style="display:flex;border-top:1px solid '+cardBorder+';border-bottom:1px solid '+cardBorder+';">'+
-        '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
-          '<div style="font-size:16px;font-weight:800;color:#0f172a;">'+cli+'</div>'+
-          '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Clientes únicos</div>'+
-        '</div>'+
-        '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
-          '<div style="font-size:16px;font-weight:800;color:#0f172a;">'+Object.values(LEADS_STATIC[v.name]||{}).reduce(function(s,n){return s+n;},0)+'</div>'+
-          '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Leads</div>'+
-        '</div>'+
-        '<div style="flex:1;text-align:center;padding:8px 4px;">'+
-          '<div style="font-size:11px;font-weight:700;color:'+ultCol+';">'+ultTxt+'</div>'+
-          '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Última vez activo</div>'+
-        '</div>'+
-      '</div>'+
-      // Actividad del día (si hay)
-      (actLines?'<div style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid '+cardBorder+';">'+actLines+'</div>':'')+
+      (function(){
+        var nuevosHoy=(g&&g.tipos&&g.tipos['Lead nuevo'])||0;
+        var leadsTotal=Object.values(LEADS_STATIC[v.name]||{}).reduce(function(s,n){return s+n;},0);
+        return '<div style="display:flex;border-top:1px solid '+cardBorder+';border-bottom:1px solid '+cardBorder+';">'+
+          '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
+            '<div style="font-size:16px;font-weight:800;color:#0f172a;">'+cli+'</div>'+
+            '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Clientes únicos</div>'+
+          '</div>'+
+          '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
+            '<div style="font-size:16px;font-weight:800;color:'+(nuevosHoy>0?'#d97706':'#0f172a')+';">'+nuevosHoy+'</div>'+
+            '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Nuevos hoy</div>'+
+          '</div>'+
+          '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
+            '<div style="font-size:16px;font-weight:800;color:#0f172a;">'+leadsTotal+'</div>'+
+            '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Leads totales</div>'+
+          '</div>'+
+          '<div style="flex:1;text-align:center;padding:8px 4px;">'+
+            '<div style="font-size:11px;font-weight:700;color:'+ultCol+';">'+ultTxt+'</div>'+
+            '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Último acceso</div>'+
+          '</div>'+
+        '</div>';
+      })()+
       // Historial 14 días
       '<div style="padding:8px 14px;display:flex;align-items:center;gap:6px;">'+
         '<span style="font-size:9px;color:#94a3b8;white-space:nowrap;">14 días</span>'+
