@@ -1618,7 +1618,10 @@ function _buildVendorDayPanel(){
 }
 function vKanban(){
   var isA=CU.role!=='vendedor';
-  var h='<div class="filter-row" style="margin-bottom:14px;"><button class="ytab '+(activeBoard==='recompra'?'on':'')+'" data-b="recompra" onclick="switchBoard(this)">📋 Recompra</button><button class="ytab '+(activeBoard==='nuevos'?'on':'')+'" data-b="nuevos" onclick="switchBoard(this)">✨ Clientes Nuevos</button><button class="ytab '+(activeBoard==='facebook'?'on':'')+'" data-b="facebook" onclick="switchBoard(this)">📣 Facebook/Pub.</button></div>';
+  var h='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">'+
+    '<div class="filter-row" style="margin-bottom:0;flex:1;"><button class="ytab '+(activeBoard==='recompra'?'on':'')+'" data-b="recompra" onclick="switchBoard(this)">📋 Recompra</button><button class="ytab '+(activeBoard==='nuevos'?'on':'')+'" data-b="nuevos" onclick="switchBoard(this)">✨ Clientes Nuevos</button><button class="ytab '+(activeBoard==='facebook'?'on':'')+'" data-b="facebook" onclick="switchBoard(this)">📣 Facebook/Pub.</button></div>'+
+    '<button onclick="activeBoard=\'nuevos\';openAddLead();" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(34,197,94,.35);">✨ Agregar cliente nuevo</button>'+
+  '</div>';
   if(isA){h+=buildCartPills(kbActiveCart,'setKbCart','cp-kb');h+=buildVendPills(kbSelVend,'setKbVend','vp-kb',kbActiveCart,buildKBVendCounts());}
   else if(CU.role==='vendedor'){
     h+=_buildVendorDayPanel();
@@ -1632,7 +1635,6 @@ function vKanban(){
   h+='<div id="kb-content"></div>';
   if((activeBoard==='nuevos'||activeBoard==='facebook')&&(CU.role==='admin'||CU.role==='subadmin'))h+=buildRRPanel();
   h+='<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">';
-  if(activeBoard==='nuevos'||activeBoard==='facebook')h+='<button class="btn-p" style="font-size:13px;padding:10px 18px;" onclick="openAddLead()">'+(activeBoard==='facebook'?'📣 Agregar de Facebook':'✨ Agregar cliente nuevo')+'</button>';
   h+='<button class="btn-s" style="font-size:13px;padding:10px 18px;" onclick="exportKbExcel()">📥 Exportar Excel</button></div>';
   return h;
 }
@@ -2028,7 +2030,7 @@ function openAddLead(){
       poolCart=pool?pool.carteras[0]:'';
     }
     var newLead={id:'lead_'+Date.now(),nombre:nombre,telefono:inp['telefono'].value,fechaContacto:inp['fechaContacto'].value,fuente:sel.value,producto:inp['producto'].value,leadCol:'nl',kbComments:[],createdBy:CU.name,createdAt:new Date().toLocaleDateString('es-HN'),assignedTo:assigned?assigned.name:'',leadCartera:poolCart};
-    DB.newLeads.push(newLead);saveDB();saveLeadToSB(newLead);regActividad('lead-nuevo',nombre,'leads',sel.value+(assigned?' → '+assigned.name:''));ov.remove();renderKanban();toast(nombre+' agregado'+(assigned?' → '+assigned.name:'')+(assigned?'':'  (sin asignar)'),'ok');
+    DB.newLeads.push(newLead);saveDB();saveLeadToSB(newLead);regActividad('lead-nuevo',nombre,'leads',sel.value+(assigned?' → '+assigned.name:''));ov.remove();activeBoard='nuevos';renderKanban();toast(nombre+' agregado'+(assigned?' → '+assigned.name:'')+(assigned?'':'  (sin asignar)'),'ok');
   };
   body.appendChild(sb);box.appendChild(hdr);box.appendChild(body);ov.appendChild(box);document.body.appendChild(ov);
 }
