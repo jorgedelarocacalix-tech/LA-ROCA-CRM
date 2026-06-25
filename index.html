@@ -877,10 +877,30 @@ function vClientes(){
   var pool=getPool();var yrs={todos:1};pool.forEach(function(c){(c.payments||[]).forEach(function(p){if(p.fecha){var pt=p.fecha.split('/');if(pt.length===3)yrs[pt[2]]=1;}});});
   var sy=Object.keys(yrs).sort(function(a,b){return a==='todos'?-1:b==='todos'?1:b-a;});
   var yH='<div class="filter-row">'+sy.map(function(y){return '<div class="ytab '+(activeYear===y?'on':'')+'" data-yr="'+y+'" onclick="setYear(this)">'+(y==='todos'?'📅 Todos':y)+'</div>';}).join('')+'</div>';
-  return cartH+yH+'<div class="filter-row"><button class="cfilter all '+(activeCat==='all'?'on':'')+'" data-cat="all" onclick="setCat(this)">Todos</button><button class="cfilter ex '+(activeCat==='ex'?'on':'')+'" data-cat="ex" onclick="setCat(this)">⭐ Excelente</button><button class="cfilter bu '+(activeCat==='bu'?'on':'')+'" data-cat="bu" onclick="setCat(this)">👍 Bueno</button><button class="cfilter re '+(activeCat==='re'?'on':'')+'" data-cat="re" onclick="setCat(this)">⚠️ Regular</button><button class="cfilter ri '+(activeCat==='ri'?'on':'')+'" data-cat="ri" onclick="setCat(this)">🔴 Riesgoso</button><input class="srch" id="srch" placeholder="🔍 Buscar cliente..." oninput="renderCards()" /><span class="res-ct" id="res-ct"></span></div><div class="cards-grid" id="cards-grid"></div><div id=\"pagination\"></div>';
+  var progBar=CU.role==='vendedor'?'<div id="vend-meta-bar"></div>':'';
+  return progBar+cartH+yH+'<div class="filter-row"><button class="cfilter all '+(activeCat==='all'?'on':'')+'" data-cat="all" onclick="setCat(this)">Todos</button><button class="cfilter ex '+(activeCat==='ex'?'on':'')+'" data-cat="ex" onclick="setCat(this)">⭐ Excelente</button><button class="cfilter bu '+(activeCat==='bu'?'on':'')+'" data-cat="bu" onclick="setCat(this)">👍 Bueno</button><button class="cfilter re '+(activeCat==='re'?'on':'')+'" data-cat="re" onclick="setCat(this)">⚠️ Regular</button><button class="cfilter ri '+(activeCat==='ri'?'on':'')+'" data-cat="ri" onclick="setCat(this)">🔴 Riesgoso</button><input class="srch" id="srch" placeholder="🔍 Buscar cliente..." oninput="renderCards()" /><span class="res-ct" id="res-ct"></span></div><div class="cards-grid" id="cards-grid"></div><div id=\"pagination\"></div>';
 }
 function renderCards(){
   var grid=document.getElementById('cards-grid');if(!grid)return;
+  // Barra de meta para vendedor en vista Clientes
+  var _vmb=document.getElementById('vend-meta-bar');
+  if(_vmb&&CU.role==='vendedor'){
+    var _hoy=monFechaHN(0),_vn=CU.name.trim(),_pool=null;
+    for(var _pi=0;_pi<VENDOR_POOLS.length;_pi++){if(VENDOR_POOLS[_pi].carteras.some(function(c){return getCarterasVend().indexOf(c)>=0;})){_pool=VENDOR_POOLS[_pi];break;}}
+    var _st=_vendStats(_vn,_hoy,_pool?_pool.carteras:null);
+    var _M=8,_pct=Math.min(100,Math.round((_st.callsHoy/_M)*100));
+    var _col=_st.callsHoy>=_M?'#276749':_st.callsHoy>=4?'#744210':'#c53030';
+    var _bg=_st.callsHoy>=_M?'#f0fff4':_st.callsHoy>=4?'#fffbeb':'#fff5f5';
+    var _br=_st.callsHoy>=_M?'#9ae6b4':_st.callsHoy>=4?'#f6d860':'#fed7d7';
+    var _bc=_st.callsHoy>=_M?'#48bb78':_st.callsHoy>=4?'#ed8936':'#fc8181';
+    _vmb.innerHTML='<div style="background:'+_bg+';border:1.5px solid '+_br+';border-radius:12px;padding:11px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">'+
+      '<div style="flex:1;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:'+_col+';margin-bottom:5px;">'+
+        '<span>📞 Gestiones hoy: '+_st.callsHoy+' / '+_M+'</span>'+
+        (_st.callsHoy>=_M?'<span>✅ Meta cumplida</span>':'<span>'+(+(_M-_st.callsHoy))+' para la meta</span>')+
+      '</div><div style="background:#e2e8f0;border-radius:6px;height:7px;overflow:hidden;">'+
+        '<div style="width:'+_pct+'%;height:100%;background:'+_bc+';border-radius:6px;transition:width .4s;"></div>'+
+      '</div></div></div>';
+  }
   var q=document.getElementById('srch')?document.getElementById('srch').value.toLowerCase():'';
   var cs=getPool();
   if(activeYear!=='todos')cs=cs.filter(function(c){return(c.payments||[]).some(function(p){if(!p.fecha)return false;var pt=p.fecha.split('/');return pt.length===3&&pt[2]===activeYear;});});
