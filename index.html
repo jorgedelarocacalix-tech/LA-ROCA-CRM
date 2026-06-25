@@ -2610,74 +2610,84 @@ async function loadMonitor(){
   }
 
   function makeMonCard(v,g,activo){
-    var cls=activo?'border-left:4px solid #22c55e;':(ultMap[v.name]?'border-left:4px solid #ef4444;':'border-left:4px solid #334155;opacity:.65;');
-    var badgeTxt=activo?'Activo hoy':(ultMap[v.name]?'No entró hoy':'Nunca ha ingresado');
-    var badgeStyle=activo?'background:rgba(34,197,94,.12);color:#22c55e;':(ultMap[v.name]?'background:rgba(239,68,68,.12);color:#ef4444;':'background:rgba(51,65,85,.3);color:#64748b;');
     var gest=g?g.total:0,cli=g?g.cli.size:0;
-    var leadsT=Object.values(LEADS_STATIC[v.name]||{}).reduce(function(s,n){return s+n;},0);
-    var recompT=Object.values(RECOMPRA_STATIC[v.name]||{}).reduce(function(s,n){return s+n;},0);
     var META_G=8,pctG=Math.min(100,Math.round(gest/META_G*100));
-    var gestCol=gest>=META_G?'#22c55e':(gest>=4?'#f59e0b':'#ef4444');
+    // Colores según progreso
+    var metaOk=gest>=META_G,metaMed=gest>=4;
+    var gestCol=metaOk?'#16a34a':metaMed?'#d97706':'#dc2626';
+    var cardBg=metaOk?'#f0fdf4':metaMed?'#fffbeb':'#fff5f5';
+    var cardBorder=metaOk?'#86efac':metaMed?'#fcd34d':'#fca5a5';
+    var barBg=metaOk?'#dcfce7':metaMed?'#fef3c7':'#fee2e2';
+    var barFill=metaOk?'#22c55e':metaMed?'#f59e0b':'#ef4444';
+    var numBg=metaOk?'#dcfce7':metaMed?'#fef9c3':'#fee2e2';
+    if(!activo){cardBg='#f8fafc';cardBorder='#cbd5e1';gestCol='#64748b';barBg='#e2e8f0';barFill='#94a3b8';numBg='#f1f5f9';}
 
-    // Dots historial
+    // Dots historial 14 días
     var dots=dias14.map(function(d){
       var dow=new Date(d+'T12:00:00Z').getUTCDay();
       var we=dow===0||dow===6;
       var ok=(hMap[v.name]||new Set()).has(d);
-      return '<div title="'+d+'" style="width:10px;height:10px;border-radius:2px;background:'+(we?'#0f172a':(ok?'#22c55e':'#1e293b'))+';'+(we?'':'border:1px solid '+(ok?'transparent':'#334155')+';')+'"></div>';
+      return '<div title="'+d+'" style="width:9px;height:9px;border-radius:2px;background:'+(we?'#e2e8f0':(ok?'#22c55e':'#e2e8f0'))+';border:1px solid '+(ok&&!we?'#16a34a':'#cbd5e1')+';"></div>';
     }).join('');
 
-    // Actividad del dia
-    var actH='';
-    if(g&&g.tipos&&Object.keys(g.tipos).length){actH='<div style="margin-bottom:8px;padding:8px 10px;background:#0f172a;border-radius:8px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#475569;margin-bottom:5px;">⚡ Actividad del día</div>'+Object.entries(g.tipos).map(function(e){var col=TIPO_COL[e[0]]||'#94a3b8';var ic=TIPO_IC[e[0]]||'●';return '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;"><span style="font-size:10px;color:'+col+';">'+ic+' '+e[0]+'</span><span style="font-size:12px;font-weight:800;color:'+col+';">'+e[1]+'</span></div>';}).join('')+'</div>';}
-    // Carteras hoy
-    var cartH=g&&g.cart.size?[...g.cart].map(function(c){return '<span style="font-size:9px;background:#0f172a;color:#64748b;border-radius:4px;padding:2px 6px;">'+c+'</span>';}).join(''):'';
+    // Última actividad bloque (versión clara)
+    var ultIso=ultMap[v.name]||null;
+    var dago=ultIso?daysAgo(ultIso):null;
+    var ultTxt=!ultIso?'Nunca ingresó':dago===0?'Hoy':dago===1?'Ayer':'Hace '+dago+' días';
+    var ultCol=!ultIso||dago>4?'#dc2626':dago>1?'#d97706':'#16a34a';
 
-    // Leads chips
-    var leadsH=LEADS_STATIC[v.name]
-      ?Object.entries(LEADS_STATIC[v.name]).map(function(e){
-          var colors={nn:'#64748b',nl:'#60a5fa',nc:'#f59e0b',ni2:'#22c55e',nv:'#a78bfa'};
-          return '<span style="font-size:9px;border-radius:4px;padding:2px 6px;font-weight:600;background:'+colors[e[0]]+'22;color:'+colors[e[0]]+';">'+(LEAD_LABEL[e[0]]||e[0])+' <b>'+e[1]+'</b></span>';
-        }).join('')
-      :'<span style="font-size:10px;color:#334155;font-style:italic;">Sin leads</span>';
+    // Actividad del día — solo gestiones reales (tipo Gestion)
+    var actLines='';
+    if(g&&g.tipos){
+      var gestN=g.tipos['Gestion']||0;
+      if(gestN)actLines+='<span style="display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">📞 '+gestN+' llamadas</span> ';
+      if(g.tipos['Lead nuevo'])actLines+='<span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">✨ '+g.tipos['Lead nuevo']+' leads nuevos</span> ';
+    }
 
-    // Recompra chips
-    var recompH=RECOMPRA_STATIC[v.name]
-      ?Object.entries(RECOMPRA_STATIC[v.name]).map(function(e){
-          var colors={prospecto:'#64748b',contactado:'#60a5fa',interesado:'#f59e0b',negociando:'#fb923c',credito:'#22c55e',vendido:'#a78bfa'};
-          return '<span style="font-size:9px;border-radius:4px;padding:2px 6px;font-weight:600;background:'+colors[e[0]]+'22;color:'+colors[e[0]]+';">'+(KB_LABEL[e[0]]||e[0])+' <b>'+e[1]+'</b></span>';
-        }).join('')
-      :'<span style="font-size:10px;color:#334155;font-style:italic;">Sin movimiento</span>';
-
-    return '<div style="background:#1e293b;border-radius:12px;padding:14px;cursor:pointer;'+cls+'" onclick="openMonDetalle(\''+v.name+'\')">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'+
-        '<span style="font-size:14px;font-weight:700;color:#f8fafc;">'+v.name+'</span>'+
-        '<span style="font-size:9px;padding:2px 7px;border-radius:99px;font-weight:700;'+badgeStyle+'">'+badgeTxt+'</span>'+
+    return '<div style="background:'+cardBg+';border:2px solid '+cardBorder+';border-radius:14px;padding:0;cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="openMonDetalle(\''+v.name+'\')">' +
+      // Cabecera con nombre y estado
+      '<div style="padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center;">'+
+        '<span style="font-size:15px;font-weight:800;color:#0f172a;">'+v.name+'</span>'+
+        '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:'+(activo?(metaOk?'#dcfce7':metaMed?'#fef3c7':'#fee2e2'):'#f1f5f9')+';color:'+(activo?gestCol:'#64748b')+';border:1px solid '+cardBorder+';">'+(activo?(metaOk?'✅ Meta cumplida':metaMed?'⚡ En progreso':'🔴 Sin meta'):'⚫ Sin actividad')+'</span>'+
       '</div>'+
-      '<div style="background:#0f172a;border-radius:8px;padding:8px 10px;margin-bottom:8px;">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">'+
-          '<span style="font-size:11px;font-weight:700;color:'+gestCol+';">'+gest+' / '+META_G+' llamadas</span>'+
-          '<span style="font-size:10px;color:#475569;">Meta recompra</span>'+
+      // Número grande + barra
+      '<div style="padding:0 14px 10px;">'+
+        '<div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:6px;">'+
+          '<span style="font-size:42px;font-weight:900;color:'+gestCol+';line-height:1;">'+gest+'</span>'+
+          '<span style="font-size:14px;color:#94a3b8;padding-bottom:6px;">/ '+META_G+' llamadas</span>'+
         '</div>'+
-        '<div style="background:#1e293b;border-radius:4px;height:8px;overflow:hidden;">'+
-          '<div style="width:'+pctG+'%;height:100%;background:'+gestCol+';border-radius:4px;transition:width .4s;"></div>'+
+        '<div style="background:'+barBg+';border-radius:6px;height:10px;overflow:hidden;">'+
+          '<div style="width:'+pctG+'%;height:100%;background:'+barFill+';border-radius:6px;transition:width .5s;"></div>'+
         '</div>'+
-        (gest>=META_G?'<div style="font-size:9px;color:#22c55e;margin-top:3px;text-align:right;font-weight:700;">✅ Meta cumplida</div>':'<div style="font-size:9px;color:#475569;margin-top:3px;text-align:right;">'+(META_G-gest)+' para la meta</div>')+
+        '<div style="display:flex;justify-content:space-between;margin-top:4px;">'+
+          '<span style="font-size:10px;color:#64748b;">'+(pctG)+'% de la meta</span>'+
+          '<span style="font-size:10px;font-weight:700;color:'+gestCol+';">'+(gest>=META_G?'¡Meta cumplida!':META_G-gest+' faltan')+'</span>'+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:6px;margin-bottom:10px;">'+
-        '<div style="flex:1;text-align:center;background:#0f172a;border-radius:8px;padding:6px 4px;"><div style="font-size:18px;font-weight:800;color:'+gestCol+';line-height:1;">'+gest+'</div><div style="font-size:9px;color:#64748b;margin-top:2px;">Gestiones</div></div>'+
-        '<div style="flex:1;text-align:center;background:#0f172a;border-radius:8px;padding:6px 4px;"><div style="font-size:18px;font-weight:800;color:#f8fafc;line-height:1;">'+cli+'</div><div style="font-size:9px;color:#64748b;margin-top:2px;">Clientes</div></div>'+
-        '<div style="flex:1;text-align:center;background:#0f172a;border-radius:8px;padding:6px 4px;"><div style="font-size:18px;font-weight:800;color:#f8fafc;line-height:1;">'+leadsT+'</div><div style="font-size:9px;color:#64748b;margin-top:2px;">Leads</div></div>'+
-        '<div style="flex:1;text-align:center;background:#0f172a;border-radius:8px;padding:6px 4px;"><div style="font-size:18px;font-weight:800;color:#f8fafc;line-height:1;">'+recompT+'</div><div style="font-size:9px;color:#64748b;margin-top:2px;">Recompra</div></div>'+
+      // Stats secundarios
+      '<div style="display:flex;border-top:1px solid '+cardBorder+';border-bottom:1px solid '+cardBorder+';">'+
+        '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
+          '<div style="font-size:16px;font-weight:800;color:#0f172a;">'+cli+'</div>'+
+          '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Clientes únicos</div>'+
+        '</div>'+
+        '<div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid '+cardBorder+';">'+
+          '<div style="font-size:16px;font-weight:800;color:#0f172a;">'+Object.values(LEADS_STATIC[v.name]||{}).reduce(function(s,n){return s+n;},0)+'</div>'+
+          '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Leads</div>'+
+        '</div>'+
+        '<div style="flex:1;text-align:center;padding:8px 4px;">'+
+          '<div style="font-size:11px;font-weight:700;color:'+ultCol+';">'+ultTxt+'</div>'+
+          '<div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;">Última vez activo</div>'+
+        '</div>'+
       '</div>'+
-      actH+
-      +(cartH?'<div style="margin-bottom:6px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#475569;margin-bottom:3px:">📁 Carteras hoy</div><div style="display:flex;flex-wrap:wrap;gap:3px;">'+cartH+'</div></div>':'')+
-      '<div style="margin-bottom:6px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#475569;margin-bottom:3px;">📋 Leads — kanban</div><div style="display:flex;flex-wrap:wrap;gap:3px;">'+leadsH+'</div></div>'+
-      '<div style="margin-bottom:8px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#475569;margin-bottom:3px;">🔄 Recompra — kanban</div><div style="display:flex;flex-wrap:wrap;gap:3px;">'+recompH+'</div></div>'+
-      '<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;"><span style="font-size:9px;color:#475569;min-width:22px;">14d</span><div style="display:flex;gap:2px;">'+dots+'</div></div>'+
-      ultBloque(ultMap[v.name]||null)+
-      '<div style="margin-top:10px;text-align:center;font-size:10px;color:#475569;border-top:1px solid #334155;padding-top:8px;">📊 Toca para ver detalle de 7 días →</div>'+
-      '</div>';
+      // Actividad del día (si hay)
+      (actLines?'<div style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid '+cardBorder+';">'+actLines+'</div>':'')+
+      // Historial 14 días
+      '<div style="padding:8px 14px;display:flex;align-items:center;gap:6px;">'+
+        '<span style="font-size:9px;color:#94a3b8;white-space:nowrap;">14 días</span>'+
+        '<div style="display:flex;gap:2px;flex-wrap:wrap;">'+dots+'</div>'+
+        '<span style="font-size:9px;color:#94a3b8;margin-left:auto;">Ver detalle →</span>'+
+      '</div>'+
+    '</div>';
   }
 
   var activosArr=EQUIPO.filter(function(v){return !!gMap[v.name];});
