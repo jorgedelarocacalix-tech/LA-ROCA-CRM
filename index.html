@@ -2636,12 +2636,12 @@ async function loadMonitor(){
     var ultTxt=!ultIso?'Nunca ingresó':dago===0?'Hoy':dago===1?'Ayer':'Hace '+dago+' días';
     var ultCol=!ultIso||dago>4?'#dc2626':dago>1?'#d97706':'#16a34a';
 
-    // Actividad del día — solo gestiones reales (tipo Gestion)
+    // Tags de actividad extra (leads, comentarios, kanban)
     var actLines='';
     if(g&&g.tipos){
-      var gestN=g.tipos['Gestion']||0;
-      if(gestN)actLines+='<span style="display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">📞 '+gestN+' llamadas</span> ';
-      if(g.tipos['Lead nuevo'])actLines+='<span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">✨ '+g.tipos['Lead nuevo']+' leads nuevos</span> ';
+      if(g.tipos['Lead nuevo'])actLines+='<span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">✨ '+g.tipos['Lead nuevo']+' leads</span>';
+      if(g.tipos['Kanban recompra'])actLines+=' <span style="display:inline-flex;align-items:center;gap:4px;background:#ede9fe;color:#6d28d9;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">🔄 '+g.tipos['Kanban recompra']+'</span>';
+      if(g.tipos['Comentario'])actLines+=' <span style="display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;">💬 '+g.tipos['Comentario']+'</span>';
     }
 
     return '<div style="background:'+cardBg+';border:2px solid '+cardBorder+';border-radius:14px;padding:0;cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);" onclick="openMonDetalle(\''+v.name+'\')">' +
