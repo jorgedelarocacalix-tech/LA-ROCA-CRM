@@ -2983,10 +2983,16 @@ function waLoadMessages(tel){
                 fetch(WA_URL+'/api/media-proxy?url='+encodeURIComponent(url),{headers:{'ngrok-skip-browser-warning':'true'}})
                 .then(function(r){return r.blob();})
                 .then(function(b){
-                  var blobUrl=URL.createObjectURL(b);
-                  _waImgCache[url]=blobUrl;
-                  var el=document.getElementById(id);
-                  if(el){el.src=blobUrl;el.style.minHeight='0';el.style.background='transparent';}
+                  var el=document.getElementById(id);if(!el)return;
+                  if(b.type&&b.type.includes('pdf')){
+                    var blobUrl=URL.createObjectURL(b);
+                    _waImgCache[url]=blobUrl;
+                    el.outerHTML='<a href="'+blobUrl+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.06);padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;font-weight:600;margin-bottom:4px;">📄 documento.pdf</a>';
+                  } else {
+                    var blobUrl=URL.createObjectURL(b);
+                    _waImgCache[url]=blobUrl;
+                    el.src=blobUrl;el.style.minHeight='0';el.style.background='transparent';
+                  }
                 })
                 .catch(function(){});
               }.bind(null,imgId,m.media_url),0);
