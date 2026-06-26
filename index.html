@@ -2969,10 +2969,11 @@ function waLoadMessages(tel){
       var t=new Date(m.timestamp).toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});
       var body='';
       if(m.media_url){
-        var isPdf=m.media_url.toLowerCase().includes('.pdf')||(m.contenido||'').includes('PDF');
+        var isPdf=m.media_url.toLowerCase().includes('.pdf')||(m.contenido||'').toLowerCase().includes('pdf');
         if(isPdf){
-          var nombrePdf=(m.media_url.split('/').pop()||'documento.pdf').replace(/^\d+-[a-z0-9]+\./,'').replace(/\./g,'.')||'documento.pdf';
-          body+='<a href="'+m.media_url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.06);padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;font-weight:600;margin-bottom:4px;">📄 '+nombrePdf+'</a>';
+          var nombrePdf=m.contenido&&!m.contenido.includes('📄')?m.contenido:(m.media_url.split('/').pop()||'documento.pdf').replace(/^\d+-[a-z0-9]+\./,'')||'documento.pdf';
+          var pdfHref=m.media_url.includes('twilio.com')?WA_URL+'/api/media-proxy?url='+encodeURIComponent(m.media_url):m.media_url;
+          body+='<a href="'+pdfHref+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.06);padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;font-weight:600;margin-bottom:4px;">📄 '+nombrePdf+'</a>';
         } else {
           if(m.media_url.includes('twilio.com')){
             var imgId='wimg-'+Math.random().toString(36).slice(2);
