@@ -3054,20 +3054,26 @@ function waUploadPDF(input,tel){
   var file=input.files[0];
   if(file.size>10*1024*1024){toast('El PDF no puede pesar más de 10 MB','err');input.value='';return;}
   toast('Subiendo PDF...','');
-  var fd=new FormData();
-  fd.append('archivo',file,file.name);
-  fetch(WA_URL+'/api/upload-archivo',{method:'POST',headers:{'ngrok-skip-browser-warning':'true'},body:fd,signal:AbortSignal.timeout(30000)})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(!d.url)throw new Error(d.error||'upload error');
-    return fetch(WA_URL+'/api/enviar-imagen-url',{
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var base64=e.target.result.split(',')[1];
+    fetch(WA_URL+'/api/upload-archivo-b64',{
       method:'POST',headers:waH(),
-      body:JSON.stringify({telefono:tel,mediaUrl:d.url,contenido:'[📄 PDF]'})
-    });
-  })
-  .then(function(r){return r.json();})
-  .then(function(){toast('PDF enviado ✅','ok');waLoadMessages(tel);waLoadConvs();})
-  .catch(function(e){toast('Error al enviar PDF','err');console.error(e);});
+      body:JSON.stringify({base64:base64,nombre:file.name,tipo:file.type||'application/pdf'})
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d.url)throw new Error(d.error||'upload error');
+      return fetch(WA_URL+'/api/enviar-imagen-url',{
+        method:'POST',headers:waH(),
+        body:JSON.stringify({telefono:tel,mediaUrl:d.url,contenido:'[📄 PDF]'})
+      });
+    })
+    .then(function(r){return r.json();})
+    .then(function(){toast('PDF enviado ✅','ok');waLoadMessages(tel);waLoadConvs();})
+    .catch(function(e){toast('Error al enviar PDF','err');console.error(e);});
+  };
+  reader.readAsDataURL(file);
   input.value='';
 }
 
