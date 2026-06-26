@@ -2972,8 +2972,18 @@ function waLoadMessages(tel){
           var nombrePdf=(m.media_url.split('/').pop()||'documento.pdf').replace(/^\d+-[a-z0-9]+\./,'').replace(/\./g,'.')||'documento.pdf';
           body+='<a href="'+m.media_url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.06);padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;font-weight:600;margin-bottom:4px;">📄 '+nombrePdf+'</a>';
         } else {
-          var imgSrc=m.media_url.includes('twilio.com')?WA_URL+'/api/media-proxy?url='+encodeURIComponent(m.media_url):m.media_url;
-          body+='<img src="'+imgSrc+'" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;" />';
+          var imgId='wimg-'+Math.random().toString(36).slice(2);
+          if(m.media_url.includes('twilio.com')){
+            body+='<img id="'+imgId+'" src="" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;min-height:40px;background:#f0f0f0;" />';
+            setTimeout(function(id,url){
+              fetch(WA_URL+'/api/media-proxy?url='+encodeURIComponent(url),{headers:{'ngrok-skip-browser-warning':'true'}})
+              .then(function(r){return r.blob();})
+              .then(function(b){var el=document.getElementById(id);if(el)el.src=URL.createObjectURL(b);})
+              .catch(function(){});
+            }.bind(null,imgId,m.media_url),0);
+          } else {
+            body+='<img src="'+m.media_url+'" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;" />';
+          }
         }
       }
       body+=(m.contenido&&m.contenido!=='[📄 PDF]'&&m.contenido!=='[📷 Imagen]'?m.contenido:'');
