@@ -3640,37 +3640,82 @@ function botSetKey(){
   document.body.appendChild(ov);
 }
 
+var _waMasivoEnviados=[];
+var _waMasivoDesde='';
+
+function waEntregaIcono(entrega,ok){
+  if(!ok)return'<span style="color:#e74c3c;">❌</span>';
+  if(entrega==='read')return'<span title="Leído" style="color:#25d366;font-weight:700;">✓✓👁</span>';
+  if(entrega==='delivered')return'<span title="Entregado" style="color:#555;font-weight:700;">✓✓</span>';
+  if(entrega==='sent')return'<span title="Enviado" style="color:#888;font-weight:700;">✓</span>';
+  if(entrega==='failed'||entrega==='undelivered')return'<span style="color:#e74c3c;" title="Falló">⚠️</span>';
+  return'<span style="color:#aaa;">✓</span>';
+}
+
+function waMasivoRenderTabla(resultados,estados){
+  var estadoMap={};
+  (estados||[]).forEach(function(e){estadoMap[e.telefono]=e;});
+  var ok=resultados.filter(function(r){return r.ok;}).length;
+  var fail=resultados.length-ok;
+  var respondieron=(estados||[]).filter(function(e){return e.respondio;}).length;
+  var rows=resultados.map(function(r){
+    var est=estadoMap[r.telefono]||{};
+    var entrega=r.ok?(est.entrega||r.entrega||'enviado'):'failed';
+    var respondio=est.respondio||false;
+    return'<tr style="border-bottom:1px solid var(--border);">'
+    +'<td style="padding:6px 8px;">'+r.nombre+'</td>'
+    +'<td style="padding:6px 8px;color:var(--muted);font-size:12px;">'+r.telefono+'</td>'
+    +'<td style="padding:6px 8px;text-align:center;">'+waEntregaIcono(entrega,r.ok)+'</td>'
+    +'<td style="padding:6px 8px;text-align:center;">'+(respondio?'<span title="Respondió" style="color:#25d366;">💬</span>':'<span style="color:#ccc;">—</span>')+'</td>'
+    +'</tr>';
+  }).join('');
+  var body=document.getElementById('wa-masivo-body');
+  if(!body)return;
+  body.innerHTML='<div class="notice" style="margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;">'
+  +'<span><strong>✅ Enviados: '+ok+'/'+resultados.length+'</strong></span>'
+  +(fail?'<span>❌ Fallaron: '+fail+'</span>':'')
+  +'<span>💬 Respondieron: '+respondieron+'</span>'
+  +'</div>'
+  +'<div style="max-height:320px;overflow-y:auto;">'
+  +'<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+  +'<thead><tr style="background:var(--bg2);">'
+  +'<th style="padding:7px 8px;text-align:left;font-weight:600;">Nombre</th>'
+  +'<th style="padding:7px 8px;text-align:left;font-weight:600;">Teléfono</th>'
+  +'<th style="padding:7px 8px;text-align:center;font-weight:600;">Entrega</th>'
+  +'<th style="padding:7px 8px;text-align:center;font-weight:600;">Respuesta</th>'
+  +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
+  +'<div style="font-size:11px;color:var(--muted);margin-top:8px;">✓ enviado &nbsp; ✓✓ entregado &nbsp; ✓✓👁 leído &nbsp; 💬 respondió</div>';
+}
+
+function waMasivoActualizarEstados(){
+  if(!_waMasivoEnviados.length)return;
+  var telefonos=_waMasivoEnviados.map(function(r){return r.telefono;}).join(',');
+  fetch(WA_URL+'/api/masivo-estado?telefonos='+encodeURIComponent(telefonos)+'&desde='+encodeURIComponent(_waMasivoDesde),{headers:waH()})
+  .then(function(r){return r.json();})
+  .then(function(estados){waMasivoRenderTabla(_waMasivoEnviados,estados);})
+  .catch(function(){});
+}
+
 function waEnviarMasivo(btn){
   var txtEl=document.getElementById('wa-masivo-txt');
   var plantilla=txtEl?txtEl.value.trim():'';
   if(!plantilla){toast('Escribe un mensaje primero','err');return;}
   btn.disabled=true;btn.textContent='Enviando...';
+  _waMasivoDesde=new Date().toISOString();
   fetch(WA_URL+'/api/enviar-masivo',{method:'POST',headers:waH(),body:JSON.stringify({clientes:waPendingMasivo,plantilla:plantilla})})
   .then(function(r){return r.json();})
   .then(function(d){
-    var resultados=d.resultados||[];
-    var ok=resultados.filter(function(r){return r.ok;}).length;
-    var fail=resultados.length-ok;
-    var body=document.getElementById('wa-masivo-body');
-    if(body){
-      var rows=resultados.map(function(r){
-        return '<tr style="border-bottom:1px solid var(--border);">'
-        +'<td style="padding:6px 8px;">'+r.nombre+'</td>'
-        +'<td style="padding:6px 8px;color:var(--muted);font-size:12px;">'+r.telefono+'</td>'
-        +'<td style="padding:6px 8px;text-align:center;">'+(r.ok?'✅':'❌')+'</td></tr>';
-      }).join('');
-      body.innerHTML='<div class="notice" style="margin-bottom:12px;"><strong>✅ Enviados: '+ok+' / '+resultados.length+'</strong>'
-      +(fail?' &nbsp;|&nbsp; ❌ Fallaron: '+fail:'')+'</div>'
-      +'<div style="max-height:320px;overflow-y:auto;">'
-      +'<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-      +'<thead><tr style="background:var(--bg2);"><th style="padding:7px 8px;text-align:left;font-weight:600;">Nombre</th>'
-      +'<th style="padding:7px 8px;text-align:left;font-weight:600;">Teléfono</th>'
-      +'<th style="padding:7px 8px;text-align:center;font-weight:600;">Estado</th></tr></thead>'
-      +'<tbody>'+rows+'</tbody></table></div>';
-    }
-    btn.textContent='Cerrar';btn.disabled=false;
-    btn.onclick=function(){this.closest('.mov').remove();};
-    var prev=btn.previousElementSibling;if(prev)prev.remove();
+    _waMasivoEnviados=d.resultados||[];
+    waMasivoRenderTabla(_waMasivoEnviados,[]);
+    // Botón actualizar estados
+    btn.textContent='🔄 Actualizar estados';btn.disabled=false;
+    btn.onclick=function(){waMasivoActualizarEstados();};
+    // Botón cerrar en lugar del cancelar
+    var prev=btn.previousElementSibling;
+    if(prev){prev.textContent='Cerrar';prev.onclick=function(){this.closest('.mov').remove();};}
+    // Actualizar automático a los 10s y 30s
+    setTimeout(waMasivoActualizarEstados,10000);
+    setTimeout(waMasivoActualizarEstados,30000);
     waLoadConvs();
   })
   .catch(function(){toast('Error en envío','err');btn.disabled=false;btn.textContent='Reintentar';});
