@@ -2961,7 +2961,9 @@ function waLoadMessages(tel){
   .then(function(r){return r.json();})
   .then(function(msgs){
     var el=document.getElementById('wa-msgs');if(!el)return;
+    var wasAtBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;
     if(!msgs||!msgs.length){el.innerHTML='<div class="empty-st"><div class="ei">💬</div>Sin mensajes</div>';return;}
+    var prevScroll=el.scrollTop;
     el.innerHTML=msgs.map(function(m){
       var out=m.direccion==='saliente';
       var t=new Date(m.timestamp).toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});
@@ -2997,7 +2999,7 @@ function waLoadMessages(tel){
       body+=(m.contenido&&m.contenido!=='[📄 PDF]'&&m.contenido!=='[📷 Imagen]'?m.contenido:'');
       return '<div class="wa-bubble '+(out?'out':'in')+'">'+body+'<div class="wa-btime">'+t+'</div></div>';
     }).join('');
-    el.scrollTop=el.scrollHeight;
+    if(wasAtBottom){el.scrollTop=el.scrollHeight;}else{el.scrollTop=prevScroll;}
   })
   .catch(function(e){console.error('wa-msgs:',e);});
 }
