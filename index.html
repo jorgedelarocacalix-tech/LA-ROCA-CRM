@@ -621,7 +621,13 @@ function _mergeSupabaseUser(su){
   cart=normalizeCartArray(cart||[]);
   var nu={id:su.id,name:su.name,pin:String(su.pin),role:su.role||'vendedor',cartera:cart};
   var ex=DB.users.findIndex(function(x){return String(x.pin)===String(su.pin)||x.id===su.id;});
-  if(ex>=0)Object.assign(DB.users[ex],nu);else DB.users.push(nu);
+  if(ex>=0){
+    var roleFijo=DB.users[ex].role; // preservar rol hardcodeado, Supabase no lo sobreescribe
+    Object.assign(DB.users[ex],nu);
+    if(roleFijo)DB.users[ex].role=roleFijo;
+  } else {
+    DB.users.push(nu);
+  }
   saveDB();
   return DB.users.find(function(x){return String(x.pin)===String(su.pin);});
 }
