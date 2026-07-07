@@ -2016,10 +2016,12 @@ function openAddLead(){
   ['WhatsApp','Facebook','Instagram','Referido','Otro'].forEach(function(o){var op=document.createElement('option');op.textContent=o;sel.appendChild(op);});
   if(activeBoard==='facebook')sel.value='Facebook';
   fd2.appendChild(lb2);fd2.appendChild(sel);body.appendChild(fd2);
-  var isVend=CU.role==='vendedor';
+  // En board 'nuevos': siempre se asigna a quien ingresa (sin importar rol)
+  // En board 'facebook': solo admin/subadmin usan ruleta para distribuir leads de publicidad
+  var isVend=activeBoard!=='facebook'||CU.role==='vendedor';
   var selEmp,repCartera='';
   if(!isVend){
-    // Admin/subadmin: selector de empresa y round-robin
+    // Solo en board facebook + admin/subadmin: selector de empresa y round-robin
     var fdEmp=document.createElement('div');fdEmp.style.marginBottom='12px';
     var lbEmp=document.createElement('label');lbEmp.style.cssText='display:block;font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;margin-bottom:5px;';lbEmp.textContent='🏪 Para qué empresa';
     selEmp=document.createElement('select');selEmp.style.cssText='width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:inherit;background:#f7f9fc;cursor:pointer;';
@@ -2039,7 +2041,7 @@ function openAddLead(){
     selEmp.onchange=updatePreview;updatePreview();
     body.appendChild(prevDiv);
   } else {
-    // Vendedor: se asigna a sí mismo, badge informativo
+    // Board 'nuevos' (todos los roles) o vendedor en facebook: se asigna a quien lo ingresa
     repCartera=(CU.cartera&&CU.cartera[0])||'';
     var selfDiv=document.createElement('div');selfDiv.style.cssText='padding:10px 14px;background:#ebf8ff;border:1.5px solid #90cdf4;border-radius:10px;font-size:13px;color:#2b6cb0;margin-bottom:16px;display:flex;align-items:center;gap:8px;';
     selfDiv.innerHTML='<span style="font-size:16px;">👤</span><span>Este cliente quedará asignado a <strong>'+CU.name+'</strong></span>';
