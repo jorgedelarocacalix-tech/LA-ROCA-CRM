@@ -2984,8 +2984,8 @@ async function loadMonitor(){
       // Vendedores de este pool que tienen meta definida
       var pUsers=DB.users.filter(function(u){
         if(!METAS[u.id])return false;
-        var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
-        return uc.some(function(c){return pool.carteras.indexOf(c)>=0;});
+        var metaCarts=Object.keys(METAS[u.id]);
+        return metaCarts.some(function(c){return pool.carteras.indexOf(c)>=0;});
       });
       // Dedup por ID
       var seen2=new Set();
