@@ -556,6 +556,20 @@ var VENDOR_POOLS=[
   {id:'pool_roca2',label:'Roca Motors 2',carteras:['roca2motors']},
   {id:'pool_mueble',label:'Su Mueble + Su Moto',carteras:['sumuebledanli','sumotodanli']}
 ];
+// Metas mensuales por usuario y cartera. unidades=meta de ventas/unidades, monto=meta en L. (opcional)
+var METAS={
+  'v_fer':      {'roca1':{unidades:25,monto:375000},'roca1motors':{unidades:3}},
+  'v_ale':      {'roca1':{unidades:30,monto:375000},'roca1motors':{unidades:3}},
+  'u1779318896833':{'roca1':{unidades:30,monto:375000},'roca1motors':{unidades:3}},
+  'v_mil':      {'roca2motors':{unidades:10,monto:150000}},
+  'v_den':      {'roca2motors':{unidades:30}},
+  'v_gab':      {'roca2motors':{unidades:20}},
+  'v_jor':      {'sumuebledanli':{unidades:20,monto:250000},'sumotodanli':{unidades:6}},
+  'v_kar':      {'sumuebledanli':{unidades:20,monto:250000},'sumotodanli':{unidades:4}},
+  'v_say':      {'sumuebledanli':{unidades:20,monto:250000},'sumotodanli':{unidades:4}},
+  'v_bra':      {'sumuebledanli':{unidades:10,monto:150000},'sumotodanli':{unidades:2}},
+  'v_all':      {'sumuebledanli':{unidades:15,monto:200000},'sumotodanli':{unidades:3}}
+};
 function getPoolByCartera(cartId){for(var i=0;i<VENDOR_POOLS.length;i++){if(VENDOR_POOLS[i].carteras.indexOf(cartId)>=0)return VENDOR_POOLS[i];}return null;}
 function getPoolById(pid){return VENDOR_POOLS.find(function(p){return p.id===pid;})||null;}
 function getRRState(){try{return JSON.parse(localStorage.getItem('rr_st')||'{}');}catch(e){return{};}}
@@ -733,16 +747,18 @@ function buildSB(){
     ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
     ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     ni('monitor','📡','Monitor','monitor');
+    if(METAS[CU.id])ni('meta','🎯','Mi Meta','meta');
   } else {
     ni('clientes','👥','Mis clientes','clientes');ni('kanban','⊞','Mi Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
     ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
+    if(METAS[CU.id])ni('meta','🎯','Mi Meta','meta');
   }
 }
 
 function goTo(view){
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('on');});
   var ni=document.getElementById('ni-'+view);if(ni)ni.classList.add('on');
-  document.getElementById('tb-ttl').textContent={dashboard:'Dashboard',clientes:'Clientes',kanban:'Kanban',seguimiento:'Seguimiento',subir:'Subir Cartera',equipo:'Equipo',monitor:'Monitor',whatsapp:'WhatsApp',mensajes:'Mensajes',recursos:'Recursos'}[view]||view;
+  document.getElementById('tb-ttl').textContent={dashboard:'Dashboard',clientes:'Clientes',kanban:'Kanban',seguimiento:'Seguimiento',subir:'Subir Cartera',equipo:'Equipo',monitor:'Monitor',whatsapp:'WhatsApp',mensajes:'Mensajes',recursos:'Recursos',meta:'Mi Meta'}[view]||view;
   var chip=document.getElementById('tb-chip');
   if(view==='clientes'&&activeCart){var cx=DB.carteras.find(function(x){return x.id===activeCart;});chip.textContent=cx?cx.name:'';chip.style.display='';}else chip.style.display='none';
   var pc=document.getElementById('pcontent');
@@ -755,6 +771,7 @@ function goTo(view){
   else if(view==='whatsapp'){pc.innerHTML=vWhatsApp();waInit();}
   else if(view==='recursos'){pc.innerHTML=vRecursos();renderRecursos();}
   else if(view==='mensajes'){pc.innerHTML=vMensajes();renderMensajes();}
+  else if(view==='meta'){pc.innerHTML=vMeta();}
   closeSB();
 }
 
@@ -1250,6 +1267,152 @@ function _vendStats(vn,hoy,poolCarteras){
   });
   estancados.sort(function(a,b){return b.dias-a.dias;});
   return{name:vn,dago:dago,callsHoy:callsHoy.length,calls7d:calls7d.length,avgPerDia:avgPerDia,estancados:estancados,leadsCalientes:myLeads.filter(function(l){return l.leadCol==='ni2'||l.leadCol==='nn';}).length,totalLeads:myLeads.length,leadsCerrados:myLeads.filter(function(l){return l.leadCol==='nv';}).length,hasData:vCalls.length>0||myLeads.length>0};
+}
+
+// Calcula ventas cerradas y monto cobrado de un vendedor en una cartera para un mes dado
+function _metaStats(userId,userName,carteraId,mes){
+  // mes = 'YYYY-MM'
+  var vn=(userName||'').trim().toLowerCase();
+  var ano=mes.split('-')[0],mm=mes.split('-')[1];
+  // Gestiones con estado 'pago' de este vendedor en esta cartera en este mes
+  var pagoG=DB.calls.filter(function(c){
+    if(c.carteraId!==carteraId)return false;
+    if(c.estado!=='pago')return false;
+    if(!(c.dateISO||'').startsWith(mes))return false;
+    return c.userId===userId||(c.userName||'').trim().toLowerCase()===vn;
+  });
+  // Clientes únicos cerrados este mes por este vendedor
+  var vendIds=[];
+  pagoG.forEach(function(g){if(g.clientId&&vendIds.indexOf(g.clientId)<0)vendIds.push(g.clientId);});
+  // Suma de pagos en este mes para esos clientes
+  var monto=0;
+  var clientes=DB.clients[carteraId]||[];
+  vendIds.forEach(function(cid){
+    var cl=clientes.find(function(c){return c.id===cid;});
+    if(!cl)return;
+    (cl.payments||[]).forEach(function(p){
+      if(!p.fecha)return;
+      var pts=p.fecha.split('/');
+      if(pts.length!==3)return;
+      if(pts[2]===ano&&pts[1].padStart(2,'0')===mm)monto+=(p.monto||0);
+    });
+  });
+  var lista=vendIds.map(function(cid){var cl=clientes.find(function(c){return c.id===cid;});return cl?cl.nombre:cid;});
+  return{ventas:vendIds.length,monto:monto,lista:lista};
+}
+
+// Vista pestaña Mi Meta
+function vMeta(){
+  if(!CU)return'';
+  var miMeta=METAS[CU.id];
+  var hoy=monFechaHN(0);
+  var mes=hoy.slice(0,7);
+  var fd=new Date(hoy+'T12:00:00Z');
+  var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var mesLabel=MESES[fd.getUTCMonth()]+' '+fd.getUTCFullYear();
+
+  if(!miMeta){
+    return'<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">🎯</div>'+
+      '<div style="font-size:16px;font-weight:700;color:var(--t1);">Sin meta asignada</div>'+
+      '<div style="font-size:13px;color:var(--t2);margin-top:8px;">El administrador aún no ha definido tu meta mensual.</div></div>';
+  }
+
+  var cartIds=Object.keys(miMeta);
+  // Calcular stats de cada cartera
+  var statsMap={};
+  cartIds.forEach(function(cid){statsMap[cid]=_metaStats(CU.id,CU.name,cid,mes);});
+
+  var totalVentas=cartIds.reduce(function(s,cid){return s+statsMap[cid].ventas;},0);
+  var totalMetaU=cartIds.reduce(function(s,cid){return s+(miMeta[cid].unidades||0);},0);
+  var totalMonto=cartIds.reduce(function(s,cid){return s+statsMap[cid].monto;},0);
+  var totalMetaM=cartIds.reduce(function(s,cid){return s+(miMeta[cid].monto||0);},0);
+
+  var h='<div style="max-width:680px;">';
+
+  // Header resumen global
+  var globalPct=Math.min(100,Math.round((totalVentas/totalMetaU)*100));
+  var gCol=totalVentas>=totalMetaU?'#276749':totalVentas>=Math.round(totalMetaU*0.5)?'#744210':'#c53030';
+  var gBg=totalVentas>=totalMetaU?'#f0fff4':totalVentas>=Math.round(totalMetaU*0.5)?'#fffbeb':'#fff5f5';
+  var gBar=totalVentas>=totalMetaU?'#48bb78':totalVentas>=Math.round(totalMetaU*0.5)?'#f59e0b':'#fc8181';
+  var gBorder=totalVentas>=totalMetaU?'#9ae6b4':totalVentas>=Math.round(totalMetaU*0.5)?'#fcd34d':'#fca5a5';
+
+  h+='<div style="background:'+gBg+';border:2px solid '+gBorder+';border-radius:16px;padding:20px 24px;margin-bottom:20px;">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">🎯 Mi Meta — '+mesLabel+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">';
+  h+='<div style="flex:1;">';
+  h+='<div style="font-size:32px;font-weight:800;color:'+gCol+';line-height:1;">'+totalVentas+'<span style="font-size:17px;font-weight:500;color:var(--t3);"> / '+totalMetaU+' unidades</span></div>';
+  if(totalMetaM>0)h+='<div style="font-size:13px;color:var(--t2);margin-top:4px;">L '+totalMonto.toLocaleString('es-HN',{maximumFractionDigits:0})+' <span style="color:var(--t3);">de</span> L '+totalMetaM.toLocaleString('es-HN',{maximumFractionDigits:0})+'</div>';
+  h+='</div>';
+  h+='<div style="width:64px;height:64px;border-radius:50%;background:'+gBar+'22;border:3px solid '+gBar+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
+  h+='<span style="font-size:15px;font-weight:800;color:'+gCol+';">'+globalPct+'%</span></div>';
+  h+='</div>';
+  h+='<div style="background:#e2e8f0;border-radius:8px;height:10px;overflow:hidden;">';
+  h+='<div style="width:'+globalPct+'%;height:100%;background:'+gBar+';border-radius:8px;transition:width .5s;"></div></div>';
+  h+='<div style="margin-top:8px;font-size:12px;font-weight:700;color:'+gCol+';">';
+  h+=(totalVentas>=totalMetaU?'🏆 ¡Meta del mes cumplida! Excelente trabajo, '+CU.name.split(' ')[0]+'!':'Faltan '+(totalMetaU-totalVentas)+' unidades para cumplir la meta del mes');
+  h+='</div></div>';
+
+  // Card por cartera
+  cartIds.forEach(function(cartId){
+    var mc=miMeta[cartId];
+    var st=statsMap[cartId];
+    var cart=DB.carteras.find(function(c){return c.id===cartId;});
+    var cartName=cart?cart.name:cartId;
+
+    var pctU=Math.min(100,Math.round((st.ventas/mc.unidades)*100));
+    var cU=st.ventas>=mc.unidades?'#276749':st.ventas>=Math.ceil(mc.unidades*0.5)?'#744210':'#c53030';
+    var barU=st.ventas>=mc.unidades?'#48bb78':st.ventas>=Math.ceil(mc.unidades*0.5)?'#f59e0b':'#fc8181';
+
+    h+='<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow);">';
+    h+='<div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);">🏪 '+cartName+'</div>';
+
+    // Unidades
+    h+='<div style="margin-bottom:'+(mc.monto?'12px':'4px')+'">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">';
+    h+='<span style="font-size:12px;font-weight:600;color:var(--t2);">📦 Unidades vendidas</span>';
+    h+='<span style="font-size:20px;font-weight:800;color:'+cU+';">'+st.ventas+'<span style="font-size:12px;font-weight:500;color:var(--t3);"> / '+mc.unidades+'</span></span>';
+    h+='</div>';
+    h+='<div style="background:#edf2f7;border-radius:6px;height:8px;overflow:hidden;margin-bottom:4px;">';
+    h+='<div style="width:'+pctU+'%;height:100%;background:'+barU+';border-radius:6px;transition:width .5s;"></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);">';
+    h+='<span>'+pctU+'% completado</span>';
+    h+=(st.ventas>=mc.unidades?'<span style="font-weight:700;color:#276749;">✅ ¡Cumplido!</span>':'<span style="font-weight:600;color:'+cU+';">'+(mc.unidades-st.ventas)+' unidades más</span>');
+    h+='</div></div>';
+
+    // Monto (solo si la cartera tiene meta de monto)
+    if(mc.monto){
+      var pctM=Math.min(100,Math.round((st.monto/mc.monto)*100));
+      var cM=st.monto>=mc.monto?'#276749':st.monto>=mc.monto*0.5?'#744210':'#c53030';
+      var barM=st.monto>=mc.monto?'#48bb78':st.monto>=mc.monto*0.5?'#f59e0b':'#fc8181';
+      var faltaM=Math.max(0,mc.monto-st.monto);
+      h+='<div style="padding-top:10px;border-top:1px dashed var(--border);margin-bottom:4px;">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">';
+      h+='<span style="font-size:12px;font-weight:600;color:var(--t2);">💰 Monto cobrado</span>';
+      h+='<span style="font-size:17px;font-weight:800;color:'+cM+';">L '+st.monto.toLocaleString('es-HN',{maximumFractionDigits:0})+'<span style="font-size:11px;font-weight:500;color:var(--t3);"> / L '+mc.monto.toLocaleString('es-HN',{maximumFractionDigits:0})+'</span></span>';
+      h+='</div>';
+      h+='<div style="background:#edf2f7;border-radius:6px;height:8px;overflow:hidden;margin-bottom:4px;">';
+      h+='<div style="width:'+pctM+'%;height:100%;background:'+barM+';border-radius:6px;transition:width .5s;"></div></div>';
+      h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);">';
+      h+='<span>'+pctM+'% completado</span>';
+      h+=(st.monto>=mc.monto?'<span style="font-weight:700;color:#276749;">✅ ¡Cumplido!</span>':'<span style="font-weight:600;color:'+cM+';">L '+faltaM.toLocaleString('es-HN',{maximumFractionDigits:0})+' más</span>');
+      h+='</div></div>';
+    }
+
+    // Lista de clientes cerrados
+    if(st.lista.length){
+      h+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">';
+      h+='<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Clientes cerrados este mes ('+st.lista.length+')</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+      st.lista.forEach(function(nm){h+='<span style="font-size:11px;background:var(--greenl);color:#276749;padding:3px 9px;border-radius:7px;border:1px solid #9ae6b4;font-weight:600;">✓ '+nm+'</span>';});
+      h+='</div></div>';
+    }else{
+      h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);padding-top:8px;border-top:1px solid var(--border);">💡 Registra gestiones con estado <strong>Pagó</strong> para ver tu avance aquí.</div>';
+    }
+    h+='</div>';
+  });
+
+  h+='</div>';
+  return h;
 }
 
 function _buildPoolTxt(pool,hoy,fechaTxt){
