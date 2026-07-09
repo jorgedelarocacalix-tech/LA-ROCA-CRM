@@ -69,11 +69,11 @@ Guardada ofuscada en el código (invertida con `.split('').reverse().join('')`).
 | Denys | 4141 | vendedor | roca2motors |
 | fer | 2323 | vendedor | roca1, roca1motors |
 | Gabriela | 4242 | vendedor | roca2motors |
-| johana | 1212 | vendedor | roca1, roca1motors |
+| johana | 1212 | **subadmin** | roca1, roca1motors |
 | Jorge | 5454 | vendedor | sumotodanli, sumuebledanli |
 | Karla | 5353 | vendedor | sumotodanli, sumuebledanli |
-| Milagro | 2222 | vendedor | roca2motors |
-| Sayda | 5151 | vendedor | sumotodanli, sumuebledanli |
+| Milagro | 2222 | **subadmin** | roca2motors |
+| Sayda | 5151 | **subadmin** | sumotodanli, sumuebledanli |
 
 Login: 3 capas — hardcoded → localStorage → Supabase fallback
 
@@ -176,8 +176,47 @@ Login: 3 capas — hardcoded → localStorage → Supabase fallback
 | Push rechazado (remote ahead) | `git fetch origin && git reset --hard origin/main` |
 | Karla no podía entrar (DNS bloqueaba Supabase) | Cambiar DNS en router a 8.8.8.8 / 8.8.4.4 |
 
+## Netlify
+- URL producción Netlify: `https://laroca-crm-app.netlify.app`
+- `netlify.toml` en la raíz del repo (publish=`.`, sin build command, Cache-Control no-cache)
+- Deploy manual: `netlify deploy --prod --dir .` desde `/Users/jorgecalix/LA-ROCA-CRM`
+- Auto-deploy desde GitHub aún no confirmado — usar deploy manual por ahora
+- Si hay caché en el browser: **Cmd+Shift+R** para forzar recarga
+
+## Sistema Mi Meta (julio 2026)
+- Pestaña "🎯 Mi Meta" visible para vendedores y subadmins con METAS definidas
+- Metas en constante `METAS` (~línea 560 de index.html)
+- Auto-tracking: gestiones con `estado='pago'` en el mes actual
+- Manual: localStorage `mv_${userId}_${carteraId}_${mes}` (solo visible en el dispositivo del vendedor)
+- Monitor (admin/subadmin) muestra metas de todos los vendedores agrupadas por pool
+- Grouping en Monitor usa cartera de METAS (no user.cartera) para agrupación correcta
+
+### METAS actuales
+| Usuario | ID | Cartera | Unidades | Monto |
+|---------|-----|---------|----------|-------|
+| Fernando | v_fer | roca1 | 25 | 375,000 |
+| Fernando | v_fer | roca1motors | 3 | — |
+| Alejandra (1111) | v_ale | roca1 | 30 | 375,000 |
+| Alejandra (1111) | v_ale | roca1motors | 3 | — |
+| Ana Castro | u1779318896833 | roca1 | 30 | 375,000 |
+| Ana Castro | u1779318896833 | roca1motors | 3 | — |
+| Milagro | v_mil | roca1 | 3 | 100,000 |
+| Denys | v_den | roca2motors | 30 | — |
+| Gabriela | v_gab | roca2motors | 20 | — |
+| Jorge | v_jor | sumuebledanli | 20 | 250,000 |
+| Jorge | v_jor | sumotodanli | 6 | — |
+| Karla | v_kar | sumuebledanli | 20 | 300,000 |
+| Karla | v_kar | sumotodanli | 4 | — |
+| Sayda | v_say | sumuebledanli | 20 | 300,000 |
+| Sayda | v_say | sumotodanli | 4 | — |
+| Brayan | v_bra | sumuebledanli | 10 | 150,000 |
+| Brayan | v_bra | sumotodanli | 2 | — |
+| Allison | v_all | sumuebledanli | 15 | 250,000 |
+| Allison | v_all | sumotodanli | 3 | — |
+
 ## Pendientes
 1. **WhatsApp API real**: Crear nuevo Business Manager + WABA + número dedicado (Laroca 1 es irrecuperable)
 2. **Facebook Messenger**: Configurar tokens de páginas FB en `.env`
 3. **URL permanente backend**: Reemplazar ngrok con servidor propio o Railway/Render
 4. **Bot auto-reply**: Deprioritizado por el usuario
+5. **Netlify auto-deploy**: Verificar que GitHub → Netlify esté conectado para deploys automáticos
