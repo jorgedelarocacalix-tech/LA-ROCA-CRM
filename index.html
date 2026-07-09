@@ -1420,7 +1420,7 @@ function vMeta(){
       h+='<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Registros del mes</div>';
       // Entradas manuales
       mv.forEach(function(e){
-        var d=new Date(e.ts);var dia=d.getDate()+'/'+(d.getMonth()+1);
+        var d=new Date(e.ts);var dia=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
         h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f7f9fc;border-radius:8px;margin-bottom:5px;font-size:12px;">';
         h+='<div style="display:flex;align-items:center;gap:8px;">';
         h+='<span style="font-size:10px;color:var(--t3);">'+dia+'</span>';
