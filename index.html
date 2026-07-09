@@ -565,10 +565,10 @@ var METAS={
   'v_den':      {'roca2motors':{unidades:30}},
   'v_gab':      {'roca2motors':{unidades:20}},
   'v_jor':      {'sumuebledanli':{unidades:20,monto:250000},'sumotodanli':{unidades:6}},
-  'v_kar':      {'sumuebledanli':{unidades:20,monto:250000},'sumotodanli':{unidades:4}},
-  'v_say':      {'sumuebledanli':{unidades:20,monto:250000},'sumotodanli':{unidades:4}},
+  'v_kar':      {'sumuebledanli':{unidades:20,monto:300000},'sumotodanli':{unidades:4}},
+  'v_say':      {'sumuebledanli':{unidades:20,monto:300000},'sumotodanli':{unidades:4}},
   'v_bra':      {'sumuebledanli':{unidades:10,monto:150000},'sumotodanli':{unidades:2}},
-  'v_all':      {'sumuebledanli':{unidades:15,monto:200000},'sumotodanli':{unidades:3}}
+  'v_all':      {'sumuebledanli':{unidades:15,monto:250000},'sumotodanli':{unidades:3}}
 };
 function getPoolByCartera(cartId){for(var i=0;i<VENDOR_POOLS.length;i++){if(VENDOR_POOLS[i].carteras.indexOf(cartId)>=0)return VENDOR_POOLS[i];}return null;}
 function getPoolById(pid){return VENDOR_POOLS.find(function(p){return p.id===pid;})||null;}
@@ -1269,23 +1269,27 @@ function _vendStats(vn,hoy,poolCarteras){
   return{name:vn,dago:dago,callsHoy:callsHoy.length,calls7d:calls7d.length,avgPerDia:avgPerDia,estancados:estancados,leadsCalientes:myLeads.filter(function(l){return l.leadCol==='ni2'||l.leadCol==='nn';}).length,totalLeads:myLeads.length,leadsCerrados:myLeads.filter(function(l){return l.leadCol==='nv';}).length,hasData:vCalls.length>0||myLeads.length>0};
 }
 
-// Calcula ventas cerradas y monto cobrado de un vendedor en una cartera para un mes dado
+// Helpers de entradas manuales de meta (localStorage)
+function _mvKey(uid,cid,mes){return'mv_'+uid+'_'+cid+'_'+mes;}
+function _getMV(uid,cid,mes){try{return JSON.parse(localStorage.getItem(_mvKey(uid,cid,mes))||'[]');}catch(e){return[];}}
+function _saveMV(uid,cid,mes,arr){try{localStorage.setItem(_mvKey(uid,cid,mes),JSON.stringify(arr));}catch(e){}}
+function _addMV(uid,cid,mes,unidades,monto){var arr=_getMV(uid,cid,mes);arr.push({ts:Date.now(),unidades:unidades||0,monto:monto||0});_saveMV(uid,cid,mes,arr);}
+function _delMV(uid,cid,mes,ts){_saveMV(uid,cid,mes,_getMV(uid,cid,mes).filter(function(e){return e.ts!=ts;}));}
+
+// Calcula ventas y monto vendido de un vendedor en una cartera (auto desde gestiones + manuales)
 function _metaStats(userId,userName,carteraId,mes){
-  // mes = 'YYYY-MM'
   var vn=(userName||'').trim().toLowerCase();
   var ano=mes.split('-')[0],mm=mes.split('-')[1];
-  // Gestiones con estado 'pago' de este vendedor en esta cartera en este mes
+  // Auto: gestiones con estado 'pago' en este mes para esta cartera
   var pagoG=DB.calls.filter(function(c){
     if(c.carteraId!==carteraId)return false;
     if(c.estado!=='pago')return false;
     if(!(c.dateISO||'').startsWith(mes))return false;
     return c.userId===userId||(c.userName||'').trim().toLowerCase()===vn;
   });
-  // Clientes únicos cerrados este mes por este vendedor
   var vendIds=[];
   pagoG.forEach(function(g){if(g.clientId&&vendIds.indexOf(g.clientId)<0)vendIds.push(g.clientId);});
-  // Suma de pagos en este mes para esos clientes
-  var monto=0;
+  var autoMonto=0;
   var clientes=DB.clients[carteraId]||[];
   vendIds.forEach(function(cid){
     var cl=clientes.find(function(c){return c.id===cid;});
@@ -1294,11 +1298,15 @@ function _metaStats(userId,userName,carteraId,mes){
       if(!p.fecha)return;
       var pts=p.fecha.split('/');
       if(pts.length!==3)return;
-      if(pts[2]===ano&&pts[1].padStart(2,'0')===mm)monto+=(p.monto||0);
+      if(pts[2]===ano&&pts[1].padStart(2,'0')===mm)autoMonto+=(p.monto||0);
     });
   });
   var lista=vendIds.map(function(cid){var cl=clientes.find(function(c){return c.id===cid;});return cl?cl.nombre:cid;});
-  return{ventas:vendIds.length,monto:monto,lista:lista};
+  // Manual: entradas registradas por el vendedor
+  var mv=_getMV(userId,carteraId,mes);
+  var mvU=mv.reduce(function(s,e){return s+(e.unidades||0);},0);
+  var mvM=mv.reduce(function(s,e){return s+(e.monto||0);},0);
+  return{ventas:vendIds.length+mvU,monto:autoMonto+mvM,lista:lista,manuales:mv,autoVentas:vendIds.length,autoMonto:autoMonto};
 }
 
 // Vista pestaña Mi Meta
@@ -1318,7 +1326,6 @@ function vMeta(){
   }
 
   var cartIds=Object.keys(miMeta);
-  // Calcular stats de cada cartera
   var statsMap={};
   cartIds.forEach(function(cid){statsMap[cid]=_metaStats(CU.id,CU.name,cid,mes);});
 
@@ -1335,13 +1342,14 @@ function vMeta(){
   var gBg=totalVentas>=totalMetaU?'#f0fff4':totalVentas>=Math.round(totalMetaU*0.5)?'#fffbeb':'#fff5f5';
   var gBar=totalVentas>=totalMetaU?'#48bb78':totalVentas>=Math.round(totalMetaU*0.5)?'#f59e0b':'#fc8181';
   var gBorder=totalVentas>=totalMetaU?'#9ae6b4':totalVentas>=Math.round(totalMetaU*0.5)?'#fcd34d':'#fca5a5';
+  var tieneMontoGlobal=totalMetaM>0;
 
   h+='<div style="background:'+gBg+';border:2px solid '+gBorder+';border-radius:16px;padding:20px 24px;margin-bottom:20px;">';
   h+='<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">🎯 Mi Meta — '+mesLabel+'</div>';
   h+='<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">';
   h+='<div style="flex:1;">';
-  h+='<div style="font-size:32px;font-weight:800;color:'+gCol+';line-height:1;">'+totalVentas+'<span style="font-size:17px;font-weight:500;color:var(--t3);"> / '+totalMetaU+' unidades</span></div>';
-  if(totalMetaM>0)h+='<div style="font-size:13px;color:var(--t2);margin-top:4px;">L '+totalMonto.toLocaleString('es-HN',{maximumFractionDigits:0})+' <span style="color:var(--t3);">de</span> L '+totalMetaM.toLocaleString('es-HN',{maximumFractionDigits:0})+'</div>';
+  h+='<div style="font-size:32px;font-weight:800;color:'+gCol+';line-height:1;">'+totalVentas+'<span style="font-size:17px;font-weight:500;color:var(--t3);"> / '+totalMetaU+' '+(tieneMontoGlobal?'ventas':'unidades')+'</span></div>';
+  if(tieneMontoGlobal)h+='<div style="font-size:13px;color:var(--t2);margin-top:4px;">L '+totalMonto.toLocaleString('es-HN',{maximumFractionDigits:0})+' vendido <span style="color:var(--t3);">de</span> L '+totalMetaM.toLocaleString('es-HN',{maximumFractionDigits:0})+'</div>';
   h+='</div>';
   h+='<div style="width:64px;height:64px;border-radius:50%;background:'+gBar+'22;border:3px solid '+gBar+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
   h+='<span style="font-size:15px;font-weight:800;color:'+gCol+';">'+globalPct+'%</span></div>';
@@ -1349,7 +1357,7 @@ function vMeta(){
   h+='<div style="background:#e2e8f0;border-radius:8px;height:10px;overflow:hidden;">';
   h+='<div style="width:'+globalPct+'%;height:100%;background:'+gBar+';border-radius:8px;transition:width .5s;"></div></div>';
   h+='<div style="margin-top:8px;font-size:12px;font-weight:700;color:'+gCol+';">';
-  h+=(totalVentas>=totalMetaU?'🏆 ¡Meta del mes cumplida! Excelente trabajo, '+CU.name.split(' ')[0]+'!':'Faltan '+(totalMetaU-totalVentas)+' unidades para cumplir la meta del mes');
+  h+=(totalVentas>=totalMetaU?'🏆 ¡Meta del mes cumplida! Excelente trabajo, '+CU.name.split(' ')[0]+'!':'Faltan '+(totalMetaU-totalVentas)+' '+(tieneMontoGlobal?'ventas':'unidades')+' para cumplir la meta del mes');
   h+='</div></div>';
 
   // Card por cartera
@@ -1358,28 +1366,33 @@ function vMeta(){
     var st=statsMap[cartId];
     var cart=DB.carteras.find(function(c){return c.id===cartId;});
     var cartName=cart?cart.name:cartId;
+    var esVentas=!!mc.monto;
 
     var pctU=Math.min(100,Math.round((st.ventas/mc.unidades)*100));
     var cU=st.ventas>=mc.unidades?'#276749':st.ventas>=Math.ceil(mc.unidades*0.5)?'#744210':'#c53030';
     var barU=st.ventas>=mc.unidades?'#48bb78':st.ventas>=Math.ceil(mc.unidades*0.5)?'#f59e0b':'#fc8181';
 
     h+='<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow);">';
-    h+='<div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);">🏪 '+cartName+'</div>';
+    // Card header con botón agregar
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);">';
+    h+='<div style="font-size:14px;font-weight:700;color:var(--t1);">🏪 '+cartName+'</div>';
+    h+='<button onclick="metaAbrirForm(\''+cartId+'\')" style="padding:6px 14px;background:var(--bluel);border:1.5px solid var(--blue);border-radius:20px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;">➕ Agregar</button>';
+    h+='</div>';
 
-    // Unidades
+    // Barra ventas/unidades
     h+='<div style="margin-bottom:'+(mc.monto?'12px':'4px')+'">';
     h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">';
-    h+='<span style="font-size:12px;font-weight:600;color:var(--t2);">📦 Unidades vendidas</span>';
+    h+='<span style="font-size:12px;font-weight:600;color:var(--t2);">'+(esVentas?'📋 Ventas del mes':'📦 Unidades vendidas')+'</span>';
     h+='<span style="font-size:20px;font-weight:800;color:'+cU+';">'+st.ventas+'<span style="font-size:12px;font-weight:500;color:var(--t3);"> / '+mc.unidades+'</span></span>';
     h+='</div>';
     h+='<div style="background:#edf2f7;border-radius:6px;height:8px;overflow:hidden;margin-bottom:4px;">';
     h+='<div style="width:'+pctU+'%;height:100%;background:'+barU+';border-radius:6px;transition:width .5s;"></div></div>';
     h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);">';
     h+='<span>'+pctU+'% completado</span>';
-    h+=(st.ventas>=mc.unidades?'<span style="font-weight:700;color:#276749;">✅ ¡Cumplido!</span>':'<span style="font-weight:600;color:'+cU+';">'+(mc.unidades-st.ventas)+' unidades más</span>');
+    h+=(st.ventas>=mc.unidades?'<span style="font-weight:700;color:#276749;">✅ ¡Cumplido!</span>':'<span style="font-weight:600;color:'+cU+';">'+(mc.unidades-st.ventas)+(esVentas?' ventas más':' unidades más')+'</span>');
     h+='</div></div>';
 
-    // Monto (solo si la cartera tiene meta de monto)
+    // Barra monto vendido
     if(mc.monto){
       var pctM=Math.min(100,Math.round((st.monto/mc.monto)*100));
       var cM=st.monto>=mc.monto?'#276749':st.monto>=mc.monto*0.5?'#744210':'#c53030';
@@ -1387,7 +1400,7 @@ function vMeta(){
       var faltaM=Math.max(0,mc.monto-st.monto);
       h+='<div style="padding-top:10px;border-top:1px dashed var(--border);margin-bottom:4px;">';
       h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">';
-      h+='<span style="font-size:12px;font-weight:600;color:var(--t2);">💰 Monto cobrado</span>';
+      h+='<span style="font-size:12px;font-weight:600;color:var(--t2);">💰 Monto vendido</span>';
       h+='<span style="font-size:17px;font-weight:800;color:'+cM+';">L '+st.monto.toLocaleString('es-HN',{maximumFractionDigits:0})+'<span style="font-size:11px;font-weight:500;color:var(--t3);"> / L '+mc.monto.toLocaleString('es-HN',{maximumFractionDigits:0})+'</span></span>';
       h+='</div>';
       h+='<div style="background:#edf2f7;border-radius:6px;height:8px;overflow:hidden;margin-bottom:4px;">';
@@ -1398,21 +1411,91 @@ function vMeta(){
       h+='</div></div>';
     }
 
-    // Lista de clientes cerrados
-    if(st.lista.length){
-      h+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">';
-      h+='<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Clientes cerrados este mes ('+st.lista.length+')</div>';
-      h+='<div style="display:flex;flex-wrap:wrap;gap:5px;">';
-      st.lista.forEach(function(nm){h+='<span style="font-size:11px;background:var(--greenl);color:#276749;padding:3px 9px;border-radius:7px;border:1px solid #9ae6b4;font-weight:600;">✓ '+nm+'</span>';});
-      h+='</div></div>';
+    // Registros del mes
+    h+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">';
+    var mv=st.manuales||[];
+    var autoLista=st.lista||[];
+    var hayRegistros=mv.length||autoLista.length;
+    if(hayRegistros){
+      h+='<div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Registros del mes</div>';
+      // Entradas manuales
+      mv.forEach(function(e){
+        var d=new Date(e.ts);var dia=d.getDate()+'/'+(d.getMonth()+1);
+        h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f7f9fc;border-radius:8px;margin-bottom:5px;font-size:12px;">';
+        h+='<div style="display:flex;align-items:center;gap:8px;">';
+        h+='<span style="font-size:10px;color:var(--t3);">'+dia+'</span>';
+        h+='<span style="font-weight:700;color:var(--blue2);">+'+e.unidades+' '+(esVentas?'venta'+(e.unidades!==1?'s':''):e.unidades!==1?'unidades':'unidad')+'</span>';
+        if(e.monto)h+='<span style="color:var(--green);font-weight:600;">· L '+e.monto.toLocaleString('es-HN',{maximumFractionDigits:0})+'</span>';
+        h+='</div>';
+        h+='<button onclick="metaBorrar(\''+cartId+'\','+e.ts+')" style="padding:2px 8px;background:#fff5f5;border:1px solid #fed7d7;border-radius:6px;font-size:10px;color:#c53030;cursor:pointer;">✕</button>';
+        h+='</div>';
+      });
+      // Clientes auto (desde gestiones)
+      autoLista.forEach(function(nm){
+        h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--greenl);border:1px solid #9ae6b4;border-radius:8px;margin-bottom:5px;">';
+        h+='<span style="font-size:11px;color:#276749;font-weight:700;">✓</span>';
+        h+='<span style="font-size:12px;color:#276749;font-weight:600;">'+nm+'</span>';
+        h+='<span style="font-size:10px;color:#48bb78;margin-left:auto;">Gestión</span>';
+        h+='</div>';
+      });
     }else{
-      h+='<div style="margin-top:10px;font-size:11px;color:var(--t3);padding-top:8px;border-top:1px solid var(--border);">💡 Registra gestiones con estado <strong>Pagó</strong> para ver tu avance aquí.</div>';
+      h+='<div style="font-size:11px;color:var(--t3);">Aún no hay registros este mes — toca <strong>➕ Agregar</strong> para registrar tu primera venta.</div>';
     }
+    h+='</div>';
     h+='</div>';
   });
 
   h+='</div>';
   return h;
+}
+
+// Modal para agregar venta manual a la meta
+function metaAbrirForm(cartId){
+  if(!CU||!METAS[CU.id])return;
+  var mc=METAS[CU.id][cartId];
+  var cart=DB.carteras.find(function(c){return c.id===cartId;});
+  var cartName=cart?cart.name:cartId;
+  var esVentas=!!(mc&&mc.monto);
+  var ex=document.getElementById('mv-modal');if(ex)ex.remove();
+  var d=document.createElement('div');
+  d.id='mv-modal';
+  d.style.cssText='position:fixed;inset:0;background:rgba(30,40,60,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  d.innerHTML=
+    '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;width:100%;max-width:360px;box-shadow:var(--shadow2);">'+
+      '<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">'+
+        '<div style="font-size:15px;font-weight:700;color:var(--t1);">➕ Registrar venta</div>'+
+        '<button onclick="document.getElementById(\'mv-modal\').remove()" style="width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:#f7f9fc;font-size:14px;cursor:pointer;color:var(--t2);">✕</button>'+
+      '</div>'+
+      '<div style="padding:20px 20px 16px;">'+
+        '<div style="font-size:12px;color:var(--t2);margin-bottom:14px;">🏪 <strong>'+cartName+'</strong></div>'+
+        '<label style="font-size:12px;font-weight:700;color:var(--t2);display:block;margin-bottom:6px;">'+(esVentas?'📋 Número de ventas / clientes cerrados':'📦 Unidades vendidas')+'</label>'+
+        '<input id="mv-u" type="number" min="1" placeholder="Ej: 2" style="width:100%;padding:13px 14px;border:2px solid var(--border);border-radius:10px;font-size:17px;font-weight:700;margin-bottom:14px;text-align:center;" />'+
+        (esVentas?
+          '<label style="font-size:12px;font-weight:700;color:var(--t2);display:block;margin-bottom:6px;">💰 Monto vendido (L.) <span style="font-weight:400;color:var(--t3);">opcional</span></label>'+
+          '<input id="mv-m" type="number" min="0" placeholder="Ej: 15000" style="width:100%;padding:13px 14px;border:2px solid var(--border);border-radius:10px;font-size:17px;font-weight:700;margin-bottom:16px;text-align:center;" />'
+          :'')+
+        '<button onclick="metaGuardar(\''+cartId+'\')" style="width:100%;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;border:none;box-shadow:0 4px 12px rgba(91,141,238,.3);">Guardar venta</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(d);
+  setTimeout(function(){var i=document.getElementById('mv-u');if(i)i.focus();},100);
+}
+function metaGuardar(cartId){
+  var u=parseInt((document.getElementById('mv-u')||{}).value)||0;
+  var mEl=document.getElementById('mv-m');
+  var m=mEl?parseFloat(mEl.value)||0:0;
+  if(u<=0){toast('Ingresa al menos 1 venta o unidad','err');return;}
+  var mes=monFechaHN(0).slice(0,7);
+  _addMV(CU.id,cartId,mes,u,m);
+  var ex=document.getElementById('mv-modal');if(ex)ex.remove();
+  goTo('meta');
+  toast('Venta registrada ✓','ok');
+}
+function metaBorrar(cartId,ts){
+  if(!confirm('¿Borrar este registro?'))return;
+  var mes=monFechaHN(0).slice(0,7);
+  _delMV(CU.id,cartId,mes,ts);
+  goTo('meta');
 }
 
 function _buildPoolTxt(pool,hoy,fechaTxt){
