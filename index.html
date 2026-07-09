@@ -2576,6 +2576,8 @@ function vMonitor(){
     '<div id="mon-grid-a" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;"></div>'+
     '<div id="mon-sec-i" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:20px 0 10px;display:flex;align-items:center;gap:8px;">❌ Sin actividad hoy <span style="flex:1;height:1px;background:var(--border);display:block;"></span></div>'+
     '<div id="mon-grid-i" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;"></div>'+
+    '<div id="mon-sec-meta" style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin:28px 0 14px;display:flex;align-items:center;gap:8px;">🎯 Metas del mes <span style="flex:1;height:1px;background:var(--border);display:block;"></span></div>'+
+    '<div id="mon-grid-meta"></div>'+
     '</div>';
 }
 
@@ -2966,6 +2968,88 @@ async function loadMonitor(){
     :'<div style="color:var(--t3);padding:20px;">Nadie registró actividad este día.</div>';
 
   if(gi)gi.innerHTML=inactivosArr.map(function(v){return makeMonCard(v,null,false);}).join('');
+
+  // Sección Metas del Mes — una tarjeta por vendedor con meta, agrupado por pool
+  var smeta=document.getElementById('mon-sec-meta');
+  var gmeta=document.getElementById('mon-grid-meta');
+  if(smeta){
+    var mes=monFechaHN(0).slice(0,7);
+    var fd2=new Date(monFechaHN(0)+'T12:00:00Z');
+    var MESES2=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    smeta.innerHTML='🎯 Metas del mes — '+MESES2[fd2.getUTCMonth()]+' '+fd2.getUTCFullYear()+' <span style="flex:1;height:1px;background:var(--border);display:block;margin-left:8px;"></span>';
+  }
+  if(gmeta){
+    var mes2=monFechaHN(0).slice(0,7);
+    var poolHtml='';
+    VENDOR_POOLS.forEach(function(pool){
+      // Vendedores de este pool que tienen meta definida
+      var pUsers=DB.users.filter(function(u){
+        if(!METAS[u.id])return false;
+        var uc=Array.isArray(u.cartera)?u.cartera:[u.cartera||''];
+        return uc.some(function(c){return pool.carteras.indexOf(c)>=0;});
+      });
+      // Dedup por ID
+      var seen2=new Set();
+      pUsers=pUsers.filter(function(u){if(seen2.has(u.id))return false;seen2.add(u.id);return true;});
+      if(!pUsers.length)return;
+
+      poolHtml+='<div style="margin-bottom:20px;">';
+      poolHtml+='<div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:10px;padding:6px 12px;background:var(--bluel);border-radius:8px;display:inline-block;">'+pool.label+'</div>';
+      poolHtml+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
+
+      pUsers.forEach(function(user){
+        var metaU=METAS[user.id];
+        var cartIds=Object.keys(metaU);
+        // Stats totales
+        var totalV=0,totalMU=0,totalM=0,totalMM=0;
+        var cartRows='';
+        cartIds.forEach(function(cartId){
+          var mc=metaU[cartId];
+          var st=_metaStats(user.id,user.name,cartId,mes2);
+          var cart=DB.carteras.find(function(c){return c.id===cartId;});
+          var cartName=cart?cart.name:cartId;
+          var esVentas=!!mc.monto;
+          totalV+=st.ventas;totalMU+=mc.unidades;totalM+=st.monto;totalMM+=(mc.monto||0);
+          var pU=Math.min(100,Math.round((st.ventas/mc.unidades)*100));
+          var bU=pU>=100?'#22c55e':pU>=50?'#f59e0b':'#ef4444';
+          cartRows+='<div style="margin-bottom:7px;">';
+          cartRows+='<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:10px;margin-bottom:3px;">';
+          cartRows+='<span style="color:#64748b;font-weight:600;">'+cartName+'</span>';
+          cartRows+='<span style="font-weight:800;color:'+bU+';">'+st.ventas+' / '+mc.unidades+' '+(esVentas?'vtas':'uds')+'</span>';
+          cartRows+='</div>';
+          cartRows+='<div style="background:#e2e8f0;border-radius:4px;height:6px;overflow:hidden;margin-bottom:'+(mc.monto?'2px':'0')+'">';
+          cartRows+='<div style="width:'+pU+'%;height:100%;background:'+bU+';border-radius:4px;"></div></div>';
+          if(mc.monto){
+            var pM=Math.min(100,Math.round((st.monto/mc.monto)*100));
+            var bM=pM>=100?'#22c55e':pM>=50?'#f59e0b':'#ef4444';
+            cartRows+='<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;">';
+            cartRows+='<span style="color:#94a3b8;">L '+fmt(st.monto)+' / L '+fmt(mc.monto)+'</span>';
+            cartRows+='<span style="font-weight:700;color:'+bM+';">'+pM+'%</span>';
+            cartRows+='</div>';
+            cartRows+='<div style="background:#e2e8f0;border-radius:4px;height:5px;overflow:hidden;">';
+            cartRows+='<div style="width:'+pM+'%;height:100%;background:'+bM+';border-radius:4px;"></div></div>';
+          }
+          cartRows+='</div>';
+        });
+        var tPct=totalMU>0?Math.min(100,Math.round(totalV/totalMU*100)):0;
+        var tCol=tPct>=100?'#16a34a':tPct>=50?'#d97706':'#dc2626';
+        var tBg=tPct>=100?'#f0fdf4':tPct>=50?'#fffbeb':'#fff5f5';
+        var tBorder=tPct>=100?'#86efac':tPct>=50?'#fcd34d':'#fca5a5';
+        poolHtml+='<div style="background:'+tBg+';border:2px solid '+tBorder+';border-radius:14px;padding:12px 14px;">';
+        poolHtml+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid '+tBorder+';">';
+        poolHtml+='<span style="font-size:14px;font-weight:800;color:#0f172a;">'+user.name+'</span>';
+        poolHtml+='<div style="display:flex;align-items:center;gap:4px;">';
+        poolHtml+='<div style="width:32px;height:32px;border-radius:50%;border:2.5px solid '+tCol+';background:'+tBg+';display:flex;align-items:center;justify-content:center;">';
+        poolHtml+='<span style="font-size:10px;font-weight:800;color:'+tCol+';">'+tPct+'%</span></div></div></div>';
+        poolHtml+=cartRows;
+        poolHtml+='<div style="font-size:10px;font-weight:700;color:'+tCol+';margin-top:6px;padding-top:6px;border-top:1px solid '+tBorder+';">';
+        poolHtml+=(tPct>=100?'🏆 ¡Meta cumplida!':tPct>=50?'⚡ En progreso — faltan '+(totalMU-totalV)+' '+(totalMM>0?'ventas':'unidades'):'🔴 '+(totalMU-totalV)+' '+(totalMM>0?'ventas':'unidades')+' para la meta');
+        poolHtml+='</div></div>';
+      });
+      poolHtml+='</div></div>';
+    });
+    gmeta.innerHTML=poolHtml||'<div style="color:var(--t3);font-size:13px;">No hay metas configuradas.</div>';
+  }
 }
 
 
