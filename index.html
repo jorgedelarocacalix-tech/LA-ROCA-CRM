@@ -1269,12 +1269,59 @@ function _vendStats(vn,hoy,poolCarteras){
   return{name:vn,dago:dago,callsHoy:callsHoy.length,calls7d:calls7d.length,avgPerDia:avgPerDia,estancados:estancados,leadsCalientes:myLeads.filter(function(l){return l.leadCol==='ni2'||l.leadCol==='nn';}).length,totalLeads:myLeads.length,leadsCerrados:myLeads.filter(function(l){return l.leadCol==='nv';}).length,hasData:vCalls.length>0||myLeads.length>0};
 }
 
-// Helpers de entradas manuales de meta (localStorage)
+// Helpers de entradas manuales de meta — sincronizadas via Supabase (tabla gestiones, estado='meta_manual')
+// para que sean visibles en Monitor (admin) y no solo en el dispositivo del vendedor.
 function _mvKey(uid,cid,mes){return'mv_'+uid+'_'+cid+'_'+mes;}
-function _getMV(uid,cid,mes){try{return JSON.parse(localStorage.getItem(_mvKey(uid,cid,mes))||'[]');}catch(e){return[];}}
-function _saveMV(uid,cid,mes,arr){try{localStorage.setItem(_mvKey(uid,cid,mes),JSON.stringify(arr));}catch(e){}}
-function _addMV(uid,cid,mes,unidades,monto){var arr=_getMV(uid,cid,mes);arr.push({ts:Date.now(),unidades:unidades||0,monto:monto||0});_saveMV(uid,cid,mes,arr);}
-function _delMV(uid,cid,mes,ts){_saveMV(uid,cid,mes,_getMV(uid,cid,mes).filter(function(e){return e.ts!=ts;}));}
+function _getMV(uid,cid,mes,uname){
+  var vn=(uname||(CU&&CU.id===uid?CU.name:'')||'').trim().toLowerCase();
+  return DB.calls.filter(function(c){
+    if(c.carteraId!==cid)return false;
+    if(c.estado!=='meta_manual')return false;
+    if(!(c.dateISO||'').startsWith(mes))return false;
+    if(!(c.userId===uid||(vn&&(c.userName||'').trim().toLowerCase()===vn)))return false;
+    return true;
+  }).map(function(g){
+    var data={};try{data=JSON.parse(g.notas||'{}');}catch(e){}
+    return{id:g.id,ts:data.ts||Date.parse(g.dateISO+'T12:00:00Z')||Date.now(),unidades:data.unidades||0,monto:data.monto||0};
+  }).sort(function(a,b){return a.ts-b.ts;});
+}
+function _addMV(uid,cid,mes,unidades,monto){
+  if(!CU)return;
+  var id='mv_'+uid+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  var now=new Date();
+  var rec={id:id,clientId:null,carteraId:cid,userId:uid,userName:CU.name,date:now.toLocaleDateString('es-HN',{day:'2-digit',month:'2-digit',year:'numeric'}),dateISO:now.toISOString().slice(0,10),resultado:'venta-manual',estado:'meta_manual',producto:'',notas:JSON.stringify({unidades:unidades||0,monto:monto||0,ts:Date.now()}),num2:''};
+  DB.calls.push(rec);
+  saveDB();
+  sbUp('gestiones',{id:rec.id,client_id:null,cartera_id:rec.carteraId,user_id:rec.userId,user_name:rec.userName,date_str:rec.date,date_iso:rec.dateISO,resultado:rec.resultado,estado:rec.estado,producto:rec.producto,notas:rec.notas,num2:rec.num2});
+}
+function _delMV(uid,cid,mes,id){
+  DB.calls=DB.calls.filter(function(c){return c.id!=id;});
+  saveDB();
+  sbDel('gestiones','?id=eq.'+encodeURIComponent(id));
+}
+// Migra a Supabase entradas manuales viejas guardadas solo en localStorage (versiones anteriores del CRM)
+function _migrateLocalMV(){
+  if(!CU)return;
+  var prefix='mv_'+CU.id+'_';
+  var keys=[];
+  for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf(prefix)===0)keys.push(k);}
+  keys.forEach(function(k){
+    var rest=k.slice(prefix.length);
+    var lastDash=rest.lastIndexOf('_');
+    if(lastDash<0){localStorage.removeItem(k);return;}
+    var cid=rest.slice(0,lastDash);
+    var arr=[];try{arr=JSON.parse(localStorage.getItem(k)||'[]');}catch(e){arr=[];}
+    arr.forEach(function(e){
+      var d=new Date(e.ts||Date.now());
+      var id='mv_'+CU.id+'_'+(e.ts||Date.now())+'_'+Math.random().toString(36).slice(2,6);
+      var rec={id:id,carteraId:cid,userId:CU.id,userName:CU.name,date:d.toLocaleDateString('es-HN',{day:'2-digit',month:'2-digit',year:'numeric'}),dateISO:d.toISOString().slice(0,10),resultado:'venta-manual',estado:'meta_manual',producto:'',notas:JSON.stringify({unidades:e.unidades||0,monto:e.monto||0,ts:e.ts||Date.now()}),num2:''};
+      DB.calls.push(rec);
+      sbUp('gestiones',{id:rec.id,client_id:null,cartera_id:rec.carteraId,user_id:rec.userId,user_name:rec.userName,date_str:rec.date,date_iso:rec.dateISO,resultado:rec.resultado,estado:rec.estado,producto:rec.producto,notas:rec.notas,num2:rec.num2});
+    });
+    localStorage.removeItem(k);
+  });
+  if(keys.length)saveDB();
+}
 
 // Calcula ventas y monto vendido de un vendedor en una cartera (auto desde gestiones + manuales)
 function _metaStats(userId,userName,carteraId,mes){
@@ -1303,7 +1350,7 @@ function _metaStats(userId,userName,carteraId,mes){
   });
   var lista=vendIds.map(function(cid){var cl=clientes.find(function(c){return c.id===cid;});return cl?cl.nombre:cid;});
   // Manual: entradas registradas por el vendedor
-  var mv=_getMV(userId,carteraId,mes);
+  var mv=_getMV(userId,carteraId,mes,userName);
   var mvU=mv.reduce(function(s,e){return s+(e.unidades||0);},0);
   var mvM=mv.reduce(function(s,e){return s+(e.monto||0);},0);
   return{ventas:vendIds.length+mvU,monto:autoMonto+mvM,lista:lista,manuales:mv,autoVentas:vendIds.length,autoMonto:autoMonto};
@@ -1312,6 +1359,7 @@ function _metaStats(userId,userName,carteraId,mes){
 // Vista pestaña Mi Meta
 function vMeta(){
   if(!CU)return'';
+  _migrateLocalMV();
   var miMeta=METAS[CU.id];
   var hoy=monFechaHN(0);
   var mes=hoy.slice(0,7);
@@ -1427,7 +1475,7 @@ function vMeta(){
         h+='<span style="font-weight:700;color:var(--blue2);">+'+e.unidades+' '+(esVentas?'venta'+(e.unidades!==1?'s':''):e.unidades!==1?'unidades':'unidad')+'</span>';
         if(e.monto)h+='<span style="color:var(--green);font-weight:600;">· L '+e.monto.toLocaleString('es-HN',{maximumFractionDigits:0})+'</span>';
         h+='</div>';
-        h+='<button onclick="metaBorrar(\''+cartId+'\','+e.ts+')" style="padding:2px 8px;background:#fff5f5;border:1px solid #fed7d7;border-radius:6px;font-size:10px;color:#c53030;cursor:pointer;">✕</button>';
+        h+='<button onclick="metaBorrar(\''+cartId+'\',\''+e.id+'\')" style="padding:2px 8px;background:#fff5f5;border:1px solid #fed7d7;border-radius:6px;font-size:10px;color:#c53030;cursor:pointer;">✕</button>';
         h+='</div>';
       });
       // Clientes auto (desde gestiones)
@@ -1491,10 +1539,10 @@ function metaGuardar(cartId){
   goTo('meta');
   toast('Venta registrada ✓','ok');
 }
-function metaBorrar(cartId,ts){
+function metaBorrar(cartId,id){
   if(!confirm('¿Borrar este registro?'))return;
   var mes=monFechaHN(0).slice(0,7);
-  _delMV(CU.id,cartId,mes,ts);
+  _delMV(CU.id,cartId,mes,id);
   goTo('meta');
 }
 
