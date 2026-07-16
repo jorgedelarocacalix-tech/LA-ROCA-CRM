@@ -561,6 +561,158 @@ var VENDOR_POOLS=[
   {id:'pool_roca2',label:'Roca Motors 2',carteras:['roca2motors']},
   {id:'pool_mueble',label:'Su Mueble + Su Moto',carteras:['sumuebledanli','sumotodanli']}
 ];
+// Guiones de venta (llamada + WhatsApp) por grupo de empresas — varias opciones para no sonar repetitivo
+var VENTA_SCRIPTS={
+  pool_roca1:{
+    label:'La Roca + Roca Motors 1',
+    llamada:[
+      "Buenas, ¿hablo con {nombre}? Le saluda {vendedor} de La Roca. Le llamo rapidito porque tenemos una promoción esta semana en {producto} y quería que usted fuera de los primeros en saberlo, ¿tiene un minuto?",
+      "Hola {nombre}, ¿cómo está? Soy {vendedor}, de La Roca. Le marco porque vi que había preguntado antes por {producto} — ¿todavía le interesa o ya lo consiguió en otro lado?",
+      "Buenas tardes {nombre}, habla {vendedor} de La Roca. No le quito mucho tiempo — quería contarle de una forma fácil de sacar {producto} a cuotas, ¿le late que le cuente en 1 minuto?"
+    ],
+    estructura:[
+      "Preséntate con tu nombre y 'La Roca' — que sepa quién le llama y por qué.",
+      "Dale una razón concreta de la llamada (promoción, algo que preguntó, algo que le puede interesar) — nunca 'solo para saludar'.",
+      "Haz una pregunta abierta y CALLA — deja que el cliente hable de su necesidad.",
+      "Cierra con un paso chiquito: 'Le mando la info por WhatsApp' o 'Lo espero el {día} en la tienda', no 'piénselo'."
+    ],
+    whatsapp:[
+      "Hola {nombre} 👋 Soy {vendedor} de La Roca. Le escribo porque tenemos esta semana promoción en {producto}, con cuotas accesibles. ¿Le comparto los detalles?",
+      "Buenas {nombre}, habla {vendedor} de La Roca 🙂 Vi que le interesaba {producto} — todavía tenemos disponible y podemos ver las cuotas que mejor le acomoden. ¿Seguimos platicando por aquí?",
+      "Hola {nombre}, soy {vendedor} de La Roca. Quería avisarle que {producto} está disponible ahora mismo y el trámite es rápido y sencillo. ¿Le gustaría que le envíe fotos y precio?"
+    ],
+    notaVoz:[
+      "Hola {nombre}, ¿qué tal? Le habla {vendedor} de La Roca. Le mando esta notita porque {gancho} y quería comentarle que tenemos una promo este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo para explicarle con calma.",
+      "{nombre}, buenas! Soy {vendedor}, de La Roca. Le escribo tantito porque {gancho} — quería avisarle de algo especial que tenemos ahorita. Sin compromiso, si le interesa saber más, nada más me dice.",
+      "Hola {nombre} 🙂 Le habla {vendedor} de La Roca. Le cuento que {gancho}, y ahorita tenemos una promoción que quizás le convenga. ¿Le gustaría que le explique? Con gusto lo llamo."
+    ]
+  },
+  pool_roca2:{
+    label:'Roca Motors 2',
+    llamada:[
+      "Buenas, ¿{nombre}? Le habla {vendedor} de Roca Motors. Le llamo porque tenemos {producto} disponible y con buenas condiciones de crédito — ¿tiene un momentito?",
+      "Hola {nombre}, soy {vendedor} de Roca Motors. Vi que había mostrado interés en una moto — ¿todavía anda buscando o ya resolvió?",
+      "Buenas {nombre}, le saluda {vendedor} de Roca Motors. Le cuento rapidito de una promoción en motos que capaz le interesa, ¿me regala un minuto?"
+    ],
+    estructura:[
+      "Preséntate con tu nombre y 'Roca Motors' de una vez.",
+      "Menciona el modelo o tipo de moto concreto, no 'tenemos motos' en general.",
+      "Pregúntale para qué la va a usar (trabajo, diario, negocio) — eso te dice qué modelo ofrecerle.",
+      "Cierra invitándolo a ver la unidad en persona o mandarle fotos/video por WhatsApp."
+    ],
+    whatsapp:[
+      "Hola {nombre} 👋 Soy {vendedor} de Roca Motors. Le escribo por {producto} — tenemos unidad disponible y buenas cuotas. ¿Le mando fotos y precio?",
+      "Buenas {nombre}, habla {vendedor} de Roca Motors 🏍️ ¿Sigue buscando moto? Tengo opciones que le pueden interesar según el uso que le vaya a dar.",
+      "Hola {nombre}, soy {vendedor} de Roca Motors. {producto} está disponible ahora — el papeleo es rápido. ¿Le gustaría que le explique cómo quedarían las cuotas?"
+    ],
+    notaVoz:[
+      "Hola {nombre}, ¿qué tal? Le habla {vendedor} de Roca Motors. Le mando esta notita porque {gancho} — tenemos una promo en motos este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo para contarle.",
+      "{nombre}, buenas! Soy {vendedor} de Roca Motors. {gancho}, por eso quería avisarle de algo que tenemos ahorita en motos. Sin compromiso — si le late, me dice y platicamos.",
+      "Hola {nombre} 🙂 Habla {vendedor}, de Roca Motors. {gancho}. Ahorita tenemos unidades con buena promoción. ¿Le interesa que le cuente? Lo llamo cuando guste."
+    ]
+  },
+  pool_mueble:{
+    label:'Su Mueble + Su Moto Danlí',
+    llamada:[
+      "Buenas, ¿hablo con {nombre}? Le saluda {vendedor} de Su Mueble/Su Moto en Danlí. Le llamo por {producto}, tenemos buena promoción esta semana — ¿tiene un minutito?",
+      "Hola {nombre}, soy {vendedor} de Su Mueble Danlí. Vi que había preguntado por {producto} — ¿todavía lo necesita?",
+      "Buenas tardes {nombre}, le habla {vendedor}. Quería contarle rapidito de una forma fácil de llevarse {producto} a cuotas cómodas, ¿le cuento?"
+    ],
+    estructura:[
+      "Preséntate con tu nombre y la tienda (Su Mueble o Su Moto Danlí).",
+      "Dale el motivo concreto de la llamada — el producto específico, no algo genérico.",
+      "Pregunta abierta sobre su necesidad (para la casa, para el negocio, para quién es) y escucha.",
+      "Cierra con un paso concreto: visita a la tienda, envío de catálogo, o cita para ver el producto."
+    ],
+    whatsapp:[
+      "Hola {nombre} 👋 Soy {vendedor} de Su Mueble/Su Moto Danlí. Le escribo por {producto}, tenemos promoción esta semana con cuotas accesibles. ¿Le comparto los detalles?",
+      "Buenas {nombre}, habla {vendedor} 🙂 Vi su interés en {producto} — todavía está disponible. ¿Seguimos platicando por aquí para ver las cuotas?",
+      "Hola {nombre}, soy {vendedor}. {producto} está disponible ahora mismo, el trámite es sencillo. ¿Le mando fotos y precio?"
+    ],
+    notaVoz:[
+      "Hola {nombre}, ¿qué tal? Le habla {vendedor} de Su Mueble/Su Moto Danlí. Le mando esta notita porque {gancho} — tenemos una promo este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo.",
+      "{nombre}, buenas! Soy {vendedor}. {gancho}, por eso quería contarle de algo especial que tenemos ahorita. Sin compromiso — si le interesa, me dice y platicamos.",
+      "Hola {nombre} 🙂 Habla {vendedor}. {gancho}. Ahorita tenemos promoción en varios productos. ¿Le gustaría que le explique? Lo llamo con gusto."
+    ]
+  }
+};
+function ventaPoolIdFor(cartId){var p=getPoolByCartera(cartId);return(p&&VENTA_SCRIPTS[p.id])?p.id:'pool_roca1';}
+// Gancho suave para nota de voz, basado en el historial real del cliente (pagos/antigüedad en Supabase) — sin sonar a venta directa
+function ganchoFor(c,isLead){
+  if(isLead)return'ando platicando con quienes han preguntado por nosotros';
+  var tp=(c&&c.totalPagos)||0,ant=(c&&c.antiguedad)||0;
+  if(tp>=6||ant>=12)return'como ya tiene tiempo siendo cliente nuestro y ha sido bien puntual';
+  if(tp>=1)return'vi que ya ha comprado con nosotros antes';
+  return'ando platicando con clientes de la zona';
+}
+function fillScript(tpl,nombre,producto,gancho){return tpl.replace(/{nombre}/g,nombre||'el cliente').replace(/{producto}/g,producto||'nuestros productos').replace(/{gancho}/g,gancho||'aprovechando que andamos con promociones esta semana').replace(/{vendedor}/g,(CU&&CU.name)||'');}
+function copyScriptTxt(btn,txt){if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){var o=btn.textContent;btn.textContent='✓ Copiado';setTimeout(function(){btn.textContent=o;},1500);});toast('Copiado ✓','ok');}
+var _guionPool=null;
+function vGuion(){
+  return '<div class="page-hdr"><div class="page-ttl">💡 Guion de venta</div></div>'
+    +'<div style="font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.5;max-width:640px;">Frases sugeridas para romper el hielo — sin sonar a venta ni que el cliente sienta que le están vendiendo. Elige tu cartera y copia la opción que más se acomode — ajusta el nombre y el detalle antes de usarla.</div>'
+    +'<div class="filter-row" id="guion-tabs"></div>'
+    +'<div id="guion-body"></div>';
+}
+function _guionCardFixed(tpl,nombre,producto,telefono,gancho){
+  var txt=fillScript(tpl,nombre,producto,gancho);
+  var card=document.createElement('div');card.style.cssText='background:#f7f9fc;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 14px;margin-bottom:8px;';
+  var p=document.createElement('div');p.style.cssText='font-size:13px;color:#2d3748;line-height:1.5;white-space:pre-wrap;margin-bottom:8px;';p.textContent=txt;
+  card.appendChild(p);
+  var row=document.createElement('div');row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;';
+  var btn=document.createElement('button');btn.textContent='📋 Copiar';btn.style.cssText='background:var(--bluel);border:1px solid #90cdf4;color:var(--blue2);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;';
+  btn.addEventListener('click',function(){copyScriptTxt(btn,txt);});
+  row.appendChild(btn);
+  if(telefono){
+    var wa=document.createElement('a');wa.textContent='📲 Enviar por WhatsApp';wa.target='_blank';
+    wa.href='https://wa.me/'+String(telefono).replace(/\D/g,'')+'?text='+encodeURIComponent(txt);
+    wa.style.cssText='background:#f0fff4;border:1px solid #9ae6b4;color:#276749;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;';
+    row.appendChild(wa);
+  }
+  card.appendChild(row);
+  return card;
+}
+function _guionCard(tpl,bg,border,txtColor,btnBg,btnColor,gancho){
+  var txt=fillScript(tpl,'[nombre]','[producto]',gancho);
+  var card=document.createElement('div');card.style.cssText='background:'+bg+';border:1.5px solid '+border+';border-radius:var(--r);padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;';
+  var p=document.createElement('div');p.style.cssText='font-size:13px;color:'+txtColor+';line-height:1.5;flex:1;white-space:pre-wrap;';p.textContent=txt;
+  var btn=document.createElement('button');btn.textContent='📋 Copiar';btn.style.cssText='flex-shrink:0;background:'+btnBg+';border:1px solid '+border+';color:'+btnColor+';border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;';
+  btn.addEventListener('click',function(){copyScriptTxt(btn,txt);});
+  card.appendChild(p);card.appendChild(btn);
+  return card;
+}
+function renderGuion(){
+  var tabs=document.getElementById('guion-tabs');if(!tabs)return;
+  if(!_guionPool){
+    if(CU.role==='vendedor'){var cc=getCarterasVend();_guionPool=cc.length?ventaPoolIdFor(cc[0]):VENDOR_POOLS[0].id;}
+    else _guionPool=VENDOR_POOLS[0].id;
+  }
+  tabs.innerHTML='';
+  VENDOR_POOLS.forEach(function(p){
+    var b=document.createElement('div');b.className='ytab'+(p.id===_guionPool?' on':'');b.textContent=p.label;
+    b.addEventListener('click',function(){_guionPool=p.id;renderGuion();});
+    tabs.appendChild(b);
+  });
+  var body=document.getElementById('guion-body');body.innerHTML='';
+  var sc=VENTA_SCRIPTS[_guionPool];
+  var genGancho='[gancho — ej: "ya tiene tiempo siendo cliente" o "ando platicando con clientes de la zona"]';
+  var vzSec=document.createElement('div');vzSec.style.cssText='margin-bottom:22px;';
+  var vzH=document.createElement('div');vzH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';vzH.textContent='🎙️ Nota de voz (WhatsApp) — tono de expectativa, no de venta';vzSec.appendChild(vzH);
+  var vzHint=document.createElement('div');vzHint.style.cssText='font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5;';vzHint.textContent='Grábalo hablado, natural — no lo mandes como texto. La idea es generar curiosidad y que el cliente pida que lo llames, no cerrar la venta por aquí.';vzSec.appendChild(vzHint);
+  sc.notaVoz.forEach(function(tpl){vzSec.appendChild(_guionCard(tpl,'#fff8e1','#f6c94e','#7a5c00','#fff','#7a5c00',genGancho));});
+  body.appendChild(vzSec);
+  var callSec=document.createElement('div');callSec.style.cssText='margin-bottom:22px;';
+  var callH=document.createElement('div');callH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';callH.textContent='📞 Para llamadas';callSec.appendChild(callH);
+  var estBox=document.createElement('div');estBox.style.cssText='background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--t2);line-height:1.7;';
+  estBox.innerHTML='<b style="color:var(--t1);">Estructura básica:</b><br>'+sc.estructura.map(function(s,i){return (i+1)+'. '+s;}).join('<br>');
+  callSec.appendChild(estBox);
+  sc.llamada.forEach(function(tpl){callSec.appendChild(_guionCard(tpl,'var(--card)','var(--border)','var(--t1)','var(--bluel)','var(--blue2)'));});
+  body.appendChild(callSec);
+  var waSec=document.createElement('div');
+  var waH=document.createElement('div');waH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';waH.textContent='💬 Para WhatsApp (texto)';waSec.appendChild(waH);
+  sc.whatsapp.forEach(function(tpl){waSec.appendChild(_guionCard(tpl,'#f0fff4','#9ae6b4','#276749','#fff','#276749'));});
+  body.appendChild(waSec);
+}
 // Metas mensuales por usuario y cartera. unidades=meta de ventas/unidades, monto=meta en L. (opcional)
 var METAS={
   'v_fer':      {'roca1':{unidades:25,monto:375000},'roca1motors':{unidades:3}},
@@ -746,16 +898,16 @@ function buildSB(){
   function sec(lbl){var d=document.createElement('div');d.style.cssText='padding:10px 8px 4px;font-size:13px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:6px;';d.textContent=lbl;n.appendChild(d);}
   if(CU.role==='admin'){
     sec('Principal');ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
-    sec('Equipo');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
+    sec('Equipo');ni('guion','💡','Guion de venta','guion');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     sec('Gestión');ni('subir','📤','Subir cartera','subir');ni('equipo','👤','Equipo','equipo');ni('monitor','📡','Monitor','monitor');
   } else if(CU.role==='subadmin'){
     ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
-    ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
+    ni('guion','💡','Guion de venta','guion');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     ni('monitor','📡','Monitor','monitor');
     if(METAS[CU.id])ni('meta','🎯','Mi Meta','meta');
   } else {
     ni('clientes','👥','Mis clientes','clientes');ni('kanban','⊞','Mi Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
-    ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
+    ni('guion','💡','Guion de venta','guion');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     if(METAS[CU.id])ni('meta','🎯','Mi Meta','meta');
   }
 }
@@ -763,7 +915,7 @@ function buildSB(){
 function goTo(view){
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('on');});
   var ni=document.getElementById('ni-'+view);if(ni)ni.classList.add('on');
-  document.getElementById('tb-ttl').textContent={dashboard:'Dashboard',clientes:'Clientes',kanban:'Kanban',seguimiento:'Seguimiento',subir:'Subir Cartera',equipo:'Equipo',monitor:'Monitor',whatsapp:'WhatsApp',mensajes:'Mensajes',recursos:'Recursos',meta:'Mi Meta'}[view]||view;
+  document.getElementById('tb-ttl').textContent={dashboard:'Dashboard',clientes:'Clientes',kanban:'Kanban',seguimiento:'Seguimiento',subir:'Subir Cartera',equipo:'Equipo',monitor:'Monitor',whatsapp:'WhatsApp',mensajes:'Mensajes',recursos:'Recursos',meta:'Mi Meta',guion:'Guion de venta'}[view]||view;
   var chip=document.getElementById('tb-chip');
   if(view==='clientes'&&activeCart){var cx=DB.carteras.find(function(x){return x.id===activeCart;});chip.textContent=cx?cx.name:'';chip.style.display='';}else chip.style.display='none';
   var pc=document.getElementById('pcontent');
@@ -777,6 +929,7 @@ function goTo(view){
   else if(view==='recursos'){pc.innerHTML=vRecursos();renderRecursos();}
   else if(view==='mensajes'){pc.innerHTML=vMensajes();renderMensajes();}
   else if(view==='meta'){pc.innerHTML=vMeta();}
+  else if(view==='guion'){pc.innerHTML=vGuion();renderGuion();}
   closeSB();
 }
 
@@ -2204,6 +2357,27 @@ function openKbCard(el){
   } else {
     if(c.telefono){var td=document.createElement('div');td.style.marginBottom='14px';var ta=document.createElement('a');ta.href='tel:'+c.telefono;ta.style.cssText='display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--greenl);border:2px solid #9ae6b4;color:#276749;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;';ta.textContent='📲 Llamar a '+c.telefono;td.appendChild(ta);body.appendChild(td);}
   }
+  var _gCart=isLead?(c.leadCartera||''):cid;
+  var _gProducto=isLead?(c.producto||''):((calls.find(function(x){return x.producto;})||{}).producto||'');
+  var _gGancho=ganchoFor(c,isLead);
+  var gToggle=document.createElement('button');gToggle.textContent='💡 Ver guion de venta';gToggle.style.cssText='width:100%;padding:10px;background:#fffbea;border:1.5px solid #f6c94e;color:#7a5c00;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;';
+  var gPanel=document.createElement('div');gPanel.style.cssText='display:none;margin-bottom:16px;';
+  gToggle.onclick=function(){
+    if(gPanel.style.display==='none'){
+      gPanel.style.display='';gToggle.textContent='💡 Ocultar guion de venta';
+      if(!gPanel.dataset.built){
+        gPanel.dataset.built='1';
+        var sc=VENTA_SCRIPTS[ventaPoolIdFor(_gCart)];
+        var vh=document.createElement('div');vh.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;margin:8px 0;';vh.textContent='🎙️ Nota de voz (léela, no la mandes como texto)';gPanel.appendChild(vh);
+        sc.notaVoz.forEach(function(tpl){gPanel.appendChild(_guionCardFixed(tpl,c.nombre,_gProducto,null,_gGancho));});
+        var ch=document.createElement('div');ch.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;margin:12px 0 8px;';ch.textContent='📞 Para llamada';gPanel.appendChild(ch);
+        sc.llamada.forEach(function(tpl){gPanel.appendChild(_guionCardFixed(tpl,c.nombre,_gProducto,null));});
+        var wh=document.createElement('div');wh.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;margin:12px 0 8px;';wh.textContent='💬 Para WhatsApp (texto)';gPanel.appendChild(wh);
+        sc.whatsapp.forEach(function(tpl){gPanel.appendChild(_guionCardFixed(tpl,c.nombre,_gProducto,c.telefono||null));});
+      }
+    } else {gPanel.style.display='none';gToggle.textContent='💡 Ver guion de venta';}
+  };
+  body.appendChild(gToggle);body.appendChild(gPanel);
   var slbl=document.createElement('div');slbl.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;border-bottom:1.5px solid #e2e8f0;padding-bottom:7px;';slbl.textContent='🏷️ Etapa actual';
   var sw=document.createElement('div');sw.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;';
   board.cols.forEach(function(col){var btn=document.createElement('button');var active=(c[colField]||defCol)===col.id;btn.style.cssText='padding:7px 14px;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid '+(active?col.color:'#e2e8f0')+';background:'+(active?col.bg:'#f7f9fc')+';color:'+(active?col.color:'#718096')+';transition:all .12s;';btn.textContent=col.name;btn.onclick=function(){c[colField]=col.id;saveDB();if(!isLead){saveCtoSB(c,cid);regActividad('kanban-recompra',c.nombre,cid,'→ '+col.name);}else{saveLeadToSB(c);regActividad('kanban-lead',c.nombre,'leads','→ '+col.name);}sw.querySelectorAll('button').forEach(function(b){b.style.background='#f7f9fc';b.style.borderColor='#e2e8f0';b.style.color='#718096';});this.style.background=col.bg;this.style.borderColor=col.color;this.style.color=col.color;if(col.id==='nv')toast('🎉 ¡Felicitaciones! '+c.nombre+' — ¡VENTA CERRADA! 🏆','ok');else if(col.id==='credito'||col.id==='ncr')toast('🎉 ¡Felicitaciones! '+c.nombre+' — ¡Con cuenta activa! 🏆','ok');else toast('Movido a '+col.name,'ok');renderKanban();};sw.appendChild(btn);});
@@ -2594,7 +2768,8 @@ function saveUsr(){var name=document.getElementById('nu-nm').value.trim(),rol=do
   if(cart.length===0)cart=[];if(!name||!pin){toast('Completa nombre y PIN','err');return;}if(!/^\d{4}$/.test(pin)){toast('El PIN debe ser exactamente 4 dígitos','err');return;}if(DB.users.find(function(u){return u.pin===pin;})){toast('Ese PIN ya está en uso — elige otro','err');return;}if(DB.users.find(function(u){return u.name.toLowerCase()===name.toLowerCase()&&u.role===rol;})){if(!confirm('Ya existe un usuario llamado "'+name+'" con el mismo rol. ¿Crear de todas formas?'))return;}var newU={id:'u'+Date.now(),name:name,pin:pin,role:rol,cartera:cart};DB.users.push(newU);var sbU=Object.assign({},newU,{cartera:JSON.stringify(newU.cartera)});saveDB();sbUp('usuarios',sbU);closeMov('mov-usr');goTo('equipo');toast('Usuario creado — PIN: '+pin,'ok');}
 function delUsr(uid){
   var u=DB.users.find(function(x){return x.id===uid;});
-  var calls=DB.calls.filter(function(c){return c.userId===uid;}).length;
+  var un=((u&&u.name)||'').trim().toLowerCase();
+  var calls=DB.calls.filter(function(c){return c.userId===uid||(un&&(c.userName||'').trim().toLowerCase()===un);}).length;
   var msg=u?'¿Eliminar a "'+u.name+'"?'+(calls>0?' Tiene '+calls+' gestiones registradas.':''):'¿Eliminar?';
   if(!confirm(msg))return;
   DB.users=DB.users.filter(function(u){return u.id!==uid;});
@@ -2603,7 +2778,8 @@ function delUsr(uid){
 function delUsersNoGest(){
   var sinGest=DB.users.filter(function(u){
     if(u.role==='admin')return false;
-    return DB.calls.filter(function(c){return isRealCall(c)&&(c.userId===u.id||c.userName===u.name);}).length===0;
+    var un=(u.name||'').trim().toLowerCase();
+    return DB.calls.filter(function(c){return isRealCall(c)&&(c.userId===u.id||(un&&(c.userName||'').trim().toLowerCase()===un));}).length===0;
   });
   if(!sinGest.length){toast('Todos los usuarios tienen gestiones','ok');return;}
   var names=sinGest.map(function(u){return u.name+' (PIN:'+u.pin+')'}).join('\n');
