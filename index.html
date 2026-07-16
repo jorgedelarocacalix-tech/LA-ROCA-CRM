@@ -683,12 +683,19 @@ var VENTA_SCRIPTS={
 };
 function ventaPoolIdFor(cartId){var p=getPoolByCartera(cartId);return(p&&VENTA_SCRIPTS[p.id])?p.id:'pool_roca1';}
 // Gancho suave para nota de voz, basado en el historial real del cliente (pagos/antigüedad en Supabase) — sin sonar a venta directa
+var _GANCHO_NUEVO=[
+  'es uno de nuestros clientes estrella y esta semana tenemos algo solo para algunos clientes',
+  'lo tenemos en la lista de clientes especiales a los que les estamos avisando primero de una promoción de esta semana',
+  'anda entre los pocos clientes que estamos invitando esta semana a una promoción que no sacamos para todos',
+  'es uno de nuestros clientes estrella, por eso le quiero avisar antes que se agote — es una promoción por tiempo limitado que no aplica para todos',
+  'nos queda poco stock de algo que solo estamos ofreciendo a algunos clientes esta semana, y usted es uno de ellos'
+];
 function ganchoFor(c,isLead){
   if(isLead)return'ando platicando con quienes han preguntado por nosotros';
   var tp=(c&&c.totalPagos)||0,ant=(c&&c.antiguedad)||0;
   if(tp>=6||ant>=12)return'como ya tiene tiempo siendo cliente nuestro y ha sido bien puntual';
   if(tp>=1)return'vi que ya ha comprado con nosotros antes';
-  return'es uno de nuestros clientes estrella y esta semana tenemos algo solo para algunos clientes';
+  return _GANCHO_NUEVO[Math.floor(Math.random()*_GANCHO_NUEVO.length)];
 }
 function fillScript(tpl,nombre,producto,gancho){return tpl.replace(/{nombre}/g,nombre||'el cliente').replace(/{producto}/g,producto||'nuestros productos').replace(/{gancho}/g,gancho||'aprovechando que andamos con promociones esta semana').replace(/{vendedor}/g,(CU&&CU.name)||'');}
 function copyScriptTxt(btn,txt){if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){var o=btn.textContent;btn.textContent='✓ Copiado';setTimeout(function(){btn.textContent=o;},1500);});toast('Copiado ✓','ok');}
