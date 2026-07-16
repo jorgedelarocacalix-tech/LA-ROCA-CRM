@@ -384,17 +384,21 @@ function loadFromSB(){
     fetchAll('leads','?select=*&order=created_at')
   ]).then(function(res){
     var cl=res[0]||[],ge=res[1]||[],us=res[2]||[],ld=res[3]||[];
-    DB.clients={};
     var _CM={'roca2':'roca2motors','moto1':'roca1motors','moto2':'roca2motors','mueble':'sumuebledanli'};
     var _knownCarts=DB.carteras.map(function(x){return x.id;});
-    cl.forEach(function(c){
-      var _cid=_CM[c.cartera_id]||c.cartera_id;
-      if(_knownCarts.indexOf(_cid)<0)return;
-      if(!DB.clients[_cid])DB.clients[_cid]=[];
-      if(DB.clients[_cid].some(function(x){return x.nombre===c.nombre;}))return; // skip duplicate
-      DB.clients[_cid].push({id:c.id,nombre:c.nombre,telefono:c.telefono||'',estado:c.estado||'pendiente',kbCol:c.kb_col||null,kbComments:c.kb_comments||[],totalPagos:c.total_pagos||0,montoTotal:parseFloat(c.monto_total)||0,ultimoPago:c.ultimo_pago||'',primerPago:c.primer_pago||'',antiguedad:parseFloat(c.antiguedad)||0,patron:c.patron||'Mensual',payments:c.payments||[]});
-    });
-    DB.calls=ge.map(function(g){var _crid=(_CM&&_CM[g.cartera_id])||g.cartera_id;return{id:g.id,clientId:g.client_id,carteraId:_crid,userId:g.user_id,userName:g.user_name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};});
+    // Si Supabase falló o devolvió vacío (timeout, rate-limit, etc.), NO sobrescribir
+    // los datos locales ya cargados — evita que clientes/gestiones "desaparezcan" del Kanban.
+    if(cl.length){
+      DB.clients={};
+      cl.forEach(function(c){
+        var _cid=_CM[c.cartera_id]||c.cartera_id;
+        if(_knownCarts.indexOf(_cid)<0)return;
+        if(!DB.clients[_cid])DB.clients[_cid]=[];
+        if(DB.clients[_cid].some(function(x){return x.nombre===c.nombre;}))return; // skip duplicate
+        DB.clients[_cid].push({id:c.id,nombre:c.nombre,telefono:c.telefono||'',estado:c.estado||'pendiente',kbCol:c.kb_col||null,kbComments:c.kb_comments||[],totalPagos:c.total_pagos||0,montoTotal:parseFloat(c.monto_total)||0,ultimoPago:c.ultimo_pago||'',primerPago:c.primer_pago||'',antiguedad:parseFloat(c.antiguedad)||0,patron:c.patron||'Mensual',payments:c.payments||[]});
+      });
+    }
+    if(ge.length){DB.calls=ge.map(function(g){var _crid=(_CM&&_CM[g.cartera_id])||g.cartera_id;return{id:g.id,clientId:g.client_id,carteraId:_crid,userId:g.user_id,userName:g.user_name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};});}
     if(us.length){
       var hardcoded=initDB_users();
       var hardPins=hardcoded.map(function(h){return h.pin;});
