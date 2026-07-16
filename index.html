@@ -688,7 +688,7 @@ function ganchoFor(c,isLead){
   var tp=(c&&c.totalPagos)||0,ant=(c&&c.antiguedad)||0;
   if(tp>=6||ant>=12)return'como ya tiene tiempo siendo cliente nuestro y ha sido bien puntual';
   if(tp>=1)return'vi que ya ha comprado con nosotros antes';
-  return'ando platicando con clientes de la zona';
+  return'es uno de nuestros clientes estrella y esta semana tenemos algo solo para algunos clientes';
 }
 function fillScript(tpl,nombre,producto,gancho){return tpl.replace(/{nombre}/g,nombre||'el cliente').replace(/{producto}/g,producto||'nuestros productos').replace(/{gancho}/g,gancho||'aprovechando que andamos con promociones esta semana').replace(/{vendedor}/g,(CU&&CU.name)||'');}
 function copyScriptTxt(btn,txt){if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){var o=btn.textContent;btn.textContent='✓ Copiado';setTimeout(function(){btn.textContent=o;},1500);});toast('Copiado ✓','ok');}
@@ -754,7 +754,7 @@ function renderGuion(){
   });
   var body=document.getElementById('guion-body');body.innerHTML='';
   var sc=VENTA_SCRIPTS[_guionPool];
-  var genGancho='ya tiene tiempo siendo cliente / ando platicando con clientes de la zona (ajusta según el cliente)';
+  var genGancho='ya tiene tiempo siendo cliente / es de nuestros clientes estrella (ajusta según el cliente)';
   var vzSec=document.createElement('div');vzSec.style.cssText='margin-bottom:22px;';
   var vzH=document.createElement('div');vzH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';vzH.textContent='🎙️ Nota de voz (WhatsApp) — tono de expectativa, no de venta';vzSec.appendChild(vzH);
   var vzHint=document.createElement('div');vzHint.style.cssText='font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5;';vzHint.textContent='Grábalo hablado, natural — no lo mandes como texto. La idea es generar curiosidad y que el cliente pida que lo llames, no cerrar la venta por aquí.';vzSec.appendChild(vzHint);
