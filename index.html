@@ -566,73 +566,118 @@ var VENTA_SCRIPTS={
   pool_roca1:{
     label:'La Roca + Roca Motors 1',
     llamada:[
-      "Buenas, ¿hablo con {nombre}? Le saluda {vendedor} de La Roca. Le llamo rapidito porque tenemos una promoción esta semana en {producto} y quería que usted fuera de los primeros en saberlo, ¿tiene un minuto?",
-      "Hola {nombre}, ¿cómo está? Soy {vendedor}, de La Roca. Le marco porque vi que había preguntado antes por {producto} — ¿todavía le interesa o ya lo consiguió en otro lado?",
-      "Buenas tardes {nombre}, habla {vendedor} de La Roca. No le quito mucho tiempo — quería contarle de una forma fácil de sacar {producto} a cuotas, ¿le late que le cuente en 1 minuto?"
-    ],
-    estructura:[
-      "Preséntate con tu nombre y 'La Roca' — que sepa quién le llama y por qué.",
-      "Dale una razón concreta de la llamada (promoción, algo que preguntó, algo que le puede interesar) — nunca 'solo para saludar'.",
-      "Haz una pregunta abierta y CALLA — deja que el cliente hable de su necesidad.",
-      "Cierra con un paso chiquito: 'Le mando la info por WhatsApp' o 'Lo espero el {día} en la tienda', no 'piénselo'."
-    ],
-    whatsapp:[
-      "Hola {nombre} 👋 Soy {vendedor} de La Roca. Le escribo porque tenemos esta semana promoción en {producto}, con cuotas accesibles. ¿Le comparto los detalles?",
-      "Buenas {nombre}, habla {vendedor} de La Roca 🙂 Vi que le interesaba {producto} — todavía tenemos disponible y podemos ver las cuotas que mejor le acomoden. ¿Seguimos platicando por aquí?",
-      "Hola {nombre}, soy {vendedor} de La Roca. Quería avisarle que {producto} está disponible ahora mismo y el trámite es rápido y sencillo. ¿Le gustaría que le envíe fotos y precio?"
+      {apertura:"Buenas, ¿hablo con {nombre}? Le saluda {vendedor}, de La Roca.",
+       pregunta:"Le llamo porque tenemos promoción esta semana en {producto} — ¿todavía anda buscando eso o ya lo consiguió en otro lado?",
+       siInteres:"¡Qué bueno! Se lo puedo separar ahorita mismo y le explico cómo quedan las cuotas. ¿Prefiere que se lo lleve pronto o se da una vueltita a la tienda a verlo?",
+       siNoInteres:"No hay problema, gracias por contestarme. Si más adelante se le ofrece, aquí andamos — ¿le parece si le mando la promoción por WhatsApp por si acaso la necesita después?"},
+      {apertura:"Hola {nombre}, ¿cómo está? Soy {vendedor}, de La Roca.",
+       pregunta:"Vi que había preguntado antes por {producto} — ¿todavía le interesa o ya lo resolvió?",
+       siInteres:"Perfecto, todavía lo tenemos disponible. ¿Quiere que le cuente ahorita cómo le quedarían las cuotas?",
+       siNoInteres:"Está bien, gracias por contarme. Si cambia de opinión o se le ofrece otra cosa, con toda confianza me escribe."},
+      {apertura:"Buenas tardes {nombre}, habla {vendedor}, de La Roca.",
+       pregunta:"Quería contarle de una forma fácil de sacar {producto} a cuotas cómodas — ¿le cuento en un minuto?",
+       siInteres:"Con gusto. Nada más necesito unos datitos rápidos — ¿tiene 5 minutos ahorita o prefiere que hablemos cuando pase a la tienda?",
+       siNoInteres:"Entiendo, no hay bronca. Le dejo mi número por si más adelante le interesa, ¿le parece bien?"}
     ],
     notaVoz:[
-      "Hola {nombre}, ¿qué tal? Le habla {vendedor} de La Roca. Le mando esta notita porque {gancho} y quería comentarle que tenemos una promo este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo para explicarle con calma.",
-      "{nombre}, buenas! Soy {vendedor}, de La Roca. Le escribo tantito porque {gancho} — quería avisarle de algo especial que tenemos ahorita. Sin compromiso, si le interesa saber más, nada más me dice.",
-      "Hola {nombre} 🙂 Le habla {vendedor} de La Roca. Le cuento que {gancho}, y ahorita tenemos una promoción que quizás le convenga. ¿Le gustaría que le explique? Con gusto lo llamo."
+      {mensaje:"Hola {nombre}, ¿qué tal? Le habla {vendedor} de La Roca. Le mando esta notita porque {gancho}, y quería comentarle que tenemos una promo este mes que capaz le interesa. Si le da curiosidad, contésteme y lo llamo para explicarle con calma.",
+       siResponde:"Perfecto, ¿a qué hora le queda bien que lo llame hoy o mañana?",
+       siNoResponde:"Si en 1 o 2 días no contesta, mándele solo esto una vez: 'Hola {nombre}, no sé si vio mi nota de voz — cualquier cosa aquí ando 🙂'. No insista más de esa vez."},
+      {mensaje:"{nombre}, buenas! Soy {vendedor}, de La Roca. Le escribo tantito porque {gancho} — quería avisarle de algo especial que tenemos ahorita. Sin compromiso, si le interesa saber más, nada más me dice.",
+       siResponde:"¡Qué bueno! Le explico rapidito — ¿lo llamo ahorita o prefiere en la tarde?",
+       siNoResponde:"Si no contesta, déjelo ahí — no mande otra nota de voz el mismo día. Puede volver a intentar en una semana con otra promo."},
+      {mensaje:"Hola {nombre} 🙂 Le habla {vendedor} de La Roca. Le cuento que {gancho}, y ahorita tenemos una promoción que quizás le convenga. ¿Le gustaría que le explique? Con gusto lo llamo.",
+       siResponde:"¡Claro! Deme un numerito donde lo pueda llamar y a qué hora le acomoda.",
+       siNoResponde:"Si no contesta en 2 días, un solo mensaje de seguimiento amable y ya — no más de eso para no incomodar."}
+    ],
+    whatsapp:[
+      {mensaje:"Hola {nombre} 👋 Soy {vendedor} de La Roca. Le escribo porque tenemos esta semana promoción en {producto}, con cuotas accesibles. ¿Le comparto los detalles?",
+       siResponde:"Perfecto, aquí le va 👇 (mándele foto, precio y cuotas). Si pregunta algo, contéstelo directo y claro.",
+       siNoResponde:"Si no contesta en 1-2 días: 'Hola {nombre}, quedo pendiente por si más adelante le interesa 🙂' — y ya no insiste más."},
+      {mensaje:"Buenas {nombre}, habla {vendedor} de La Roca 🙂 Vi que le interesaba {producto} — todavía tenemos disponible y podemos ver las cuotas que mejor le acomoden. ¿Seguimos platicando por aquí?",
+       siResponde:"Con gusto, cuénteme más — pregúntele para qué lo necesita y arme la cuota que mejor le sirva.",
+       siNoResponde:"Si no contesta, espere 2-3 días y mande un mensaje corto una sola vez, sin presionar."},
+      {mensaje:"Hola {nombre}, soy {vendedor} de La Roca. Quería avisarle que {producto} está disponible ahora mismo y el trámite es rápido y sencillo. ¿Le gustaría que le envíe fotos y precio?",
+       siResponde:"Sí, mándeme — envíe fotos, precio y forma de pago clara, sin saturar de mensajes.",
+       siNoResponde:"Si no contesta, no insista el mismo día — inténtelo de nuevo en unos días con otra novedad."}
     ]
   },
   pool_roca2:{
     label:'Roca Motors 2',
     llamada:[
-      "Buenas, ¿{nombre}? Le habla {vendedor} de Roca Motors. Le llamo porque tenemos {producto} disponible y con buenas condiciones de crédito — ¿tiene un momentito?",
-      "Hola {nombre}, soy {vendedor} de Roca Motors. Vi que había mostrado interés en una moto — ¿todavía anda buscando o ya resolvió?",
-      "Buenas {nombre}, le saluda {vendedor} de Roca Motors. Le cuento rapidito de una promoción en motos que capaz le interesa, ¿me regala un minuto?"
-    ],
-    estructura:[
-      "Preséntate con tu nombre y 'Roca Motors' de una vez.",
-      "Menciona el modelo o tipo de moto concreto, no 'tenemos motos' en general.",
-      "Pregúntale para qué la va a usar (trabajo, diario, negocio) — eso te dice qué modelo ofrecerle.",
-      "Cierra invitándolo a ver la unidad en persona o mandarle fotos/video por WhatsApp."
-    ],
-    whatsapp:[
-      "Hola {nombre} 👋 Soy {vendedor} de Roca Motors. Le escribo por {producto} — tenemos unidad disponible y buenas cuotas. ¿Le mando fotos y precio?",
-      "Buenas {nombre}, habla {vendedor} de Roca Motors 🏍️ ¿Sigue buscando moto? Tengo opciones que le pueden interesar según el uso que le vaya a dar.",
-      "Hola {nombre}, soy {vendedor} de Roca Motors. {producto} está disponible ahora — el papeleo es rápido. ¿Le gustaría que le explique cómo quedarían las cuotas?"
+      {apertura:"Buenas, ¿{nombre}? Le habla {vendedor}, de Roca Motors.",
+       pregunta:"Le llamo porque tenemos {producto} disponible y con buenas condiciones de crédito — ¿tiene un momentito?",
+       siInteres:"¡Perfecto! ¿Para qué la andaría usando — para el trabajo, el diario, o para un negocio? Así le recomiendo el modelo que más le conviene.",
+       siNoInteres:"No hay problema. Si más adelante anda viendo moto, aquí andamos — ¿le mando fotos por WhatsApp por si las necesita después?"},
+      {apertura:"Hola {nombre}, soy {vendedor} de Roca Motors.",
+       pregunta:"Vi que había mostrado interés en una moto — ¿todavía anda buscando o ya resolvió?",
+       siInteres:"Qué bueno, todavía tenemos opciones. ¿Le gustaría verla en persona o que le mande fotos y video primero?",
+       siNoInteres:"Está bien, gracias por contarme. Si más adelante se le ofrece, con confianza me escribe."},
+      {apertura:"Buenas {nombre}, le saluda {vendedor}, de Roca Motors.",
+       pregunta:"Le cuento rapidito de una promoción en motos que capaz le interesa, ¿me regala un minuto?",
+       siInteres:"Con gusto. ¿Qué tipo de moto anda buscando o para qué la necesita? Así le muestro justo lo que le conviene.",
+       siNoInteres:"Entiendo, no hay bronca. Le dejo mi número por si después le interesa, ¿le parece?"}
     ],
     notaVoz:[
-      "Hola {nombre}, ¿qué tal? Le habla {vendedor} de Roca Motors. Le mando esta notita porque {gancho} — tenemos una promo en motos este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo para contarle.",
-      "{nombre}, buenas! Soy {vendedor} de Roca Motors. {gancho}, por eso quería avisarle de algo que tenemos ahorita en motos. Sin compromiso — si le late, me dice y platicamos.",
-      "Hola {nombre} 🙂 Habla {vendedor}, de Roca Motors. {gancho}. Ahorita tenemos unidades con buena promoción. ¿Le interesa que le cuente? Lo llamo cuando guste."
+      {mensaje:"Hola {nombre}, ¿qué tal? Le habla {vendedor} de Roca Motors. Le mando esta notita porque {gancho} — tenemos una promo en motos este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo para contarle.",
+       siResponde:"¿A qué hora lo puedo llamar? Le explico las opciones que tenemos.",
+       siNoResponde:"Si no contesta en 1-2 días, un solo mensaje corto de seguimiento y ya, sin insistir más."},
+      {mensaje:"{nombre}, buenas! Soy {vendedor} de Roca Motors. {gancho}, por eso quería avisarle de algo que tenemos ahorita en motos. Sin compromiso — si le late, me dice y platicamos.",
+       siResponde:"¡Qué bueno! Cuénteme para qué la necesita y le recomiendo el modelo.",
+       siNoResponde:"Si no contesta, no insista el mismo día — puede volver a intentar en una semana."},
+      {mensaje:"Hola {nombre} 🙂 Habla {vendedor}, de Roca Motors. {gancho}. Ahorita tenemos unidades con buena promoción. ¿Le interesa que le cuente? Lo llamo cuando guste.",
+       siResponde:"Claro, deme un numerito y hora para llamarlo.",
+       siNoResponde:"Un solo mensaje de seguimiento a los 2 días, amable y corto — nada más."}
+    ],
+    whatsapp:[
+      {mensaje:"Hola {nombre} 👋 Soy {vendedor} de Roca Motors. Le escribo por {producto} — tenemos unidad disponible y buenas cuotas. ¿Le mando fotos y precio?",
+       siResponde:"Sí, mándeme — envíe fotos, precio y cuotas claras.",
+       siNoResponde:"Si no contesta, espere unos días antes de volver a escribir."},
+      {mensaje:"Buenas {nombre}, habla {vendedor} de Roca Motors 🏍️ ¿Sigue buscando moto? Tengo opciones que le pueden interesar según el uso que le vaya a dar.",
+       siResponde:"Pregúntele para qué la va a usar y recomiende el modelo según eso.",
+       siNoResponde:"Si no contesta, no insista — inténtelo después con una novedad distinta."},
+      {mensaje:"Hola {nombre}, soy {vendedor} de Roca Motors. {producto} está disponible ahora — el papeleo es rápido. ¿Le gustaría que le explique cómo quedarían las cuotas?",
+       siResponde:"Sí, explíqueme — explique cuotas y requisitos con calma, sin apurar.",
+       siNoResponde:"Si no contesta, deje pasar unos días antes de volver a escribir."}
     ]
   },
   pool_mueble:{
     label:'Su Mueble + Su Moto Danlí',
     llamada:[
-      "Buenas, ¿hablo con {nombre}? Le saluda {vendedor} de Su Mueble/Su Moto en Danlí. Le llamo por {producto}, tenemos buena promoción esta semana — ¿tiene un minutito?",
-      "Hola {nombre}, soy {vendedor} de Su Mueble Danlí. Vi que había preguntado por {producto} — ¿todavía lo necesita?",
-      "Buenas tardes {nombre}, le habla {vendedor}. Quería contarle rapidito de una forma fácil de llevarse {producto} a cuotas cómodas, ¿le cuento?"
-    ],
-    estructura:[
-      "Preséntate con tu nombre y la tienda (Su Mueble o Su Moto Danlí).",
-      "Dale el motivo concreto de la llamada — el producto específico, no algo genérico.",
-      "Pregunta abierta sobre su necesidad (para la casa, para el negocio, para quién es) y escucha.",
-      "Cierra con un paso concreto: visita a la tienda, envío de catálogo, o cita para ver el producto."
-    ],
-    whatsapp:[
-      "Hola {nombre} 👋 Soy {vendedor} de Su Mueble/Su Moto Danlí. Le escribo por {producto}, tenemos promoción esta semana con cuotas accesibles. ¿Le comparto los detalles?",
-      "Buenas {nombre}, habla {vendedor} 🙂 Vi su interés en {producto} — todavía está disponible. ¿Seguimos platicando por aquí para ver las cuotas?",
-      "Hola {nombre}, soy {vendedor}. {producto} está disponible ahora mismo, el trámite es sencillo. ¿Le mando fotos y precio?"
+      {apertura:"Buenas, ¿hablo con {nombre}? Le saluda {vendedor}, de Su Mueble/Su Moto en Danlí.",
+       pregunta:"Le llamo por {producto}, tenemos buena promoción esta semana — ¿tiene un minutito?",
+       siInteres:"¡Qué bueno! ¿Es para la casa o para algún negocio? Así le explico justo lo que necesita.",
+       siNoInteres:"No hay problema, gracias por contestarme. Si más adelante se le ofrece, aquí andamos."},
+      {apertura:"Hola {nombre}, soy {vendedor} de Su Mueble Danlí.",
+       pregunta:"Vi que había preguntado por {producto} — ¿todavía lo necesita?",
+       siInteres:"Perfecto, todavía está disponible. ¿Le cuento cómo quedarían las cuotas?",
+       siNoInteres:"Está bien, gracias por contarme. Si cambia de opinión, con confianza me escribe."},
+      {apertura:"Buenas tardes {nombre}, le habla {vendedor}.",
+       pregunta:"Quería contarle rapidito de una forma fácil de llevarse {producto} a cuotas cómodas, ¿le cuento?",
+       siInteres:"Con gusto. ¿Tiene 5 minutos ahorita o prefiere que hablemos cuando pase a la tienda?",
+       siNoInteres:"Entiendo, no hay bronca. Le dejo mi número por si más adelante le interesa."}
     ],
     notaVoz:[
-      "Hola {nombre}, ¿qué tal? Le habla {vendedor} de Su Mueble/Su Moto Danlí. Le mando esta notita porque {gancho} — tenemos una promo este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo.",
-      "{nombre}, buenas! Soy {vendedor}. {gancho}, por eso quería contarle de algo especial que tenemos ahorita. Sin compromiso — si le interesa, me dice y platicamos.",
-      "Hola {nombre} 🙂 Habla {vendedor}. {gancho}. Ahorita tenemos promoción en varios productos. ¿Le gustaría que le explique? Lo llamo con gusto."
+      {mensaje:"Hola {nombre}, ¿qué tal? Le habla {vendedor} de Su Mueble/Su Moto Danlí. Le mando esta notita porque {gancho} — tenemos una promo este mes que capaz le interesa. Si le da curiosidad, me dice y lo llamo.",
+       siResponde:"¿A qué hora le queda bien que lo llame?",
+       siNoResponde:"Si no contesta en 1-2 días, un solo mensaje corto y ya, sin insistir más."},
+      {mensaje:"{nombre}, buenas! Soy {vendedor}. {gancho}, por eso quería contarle de algo especial que tenemos ahorita. Sin compromiso — si le interesa, me dice y platicamos.",
+       siResponde:"¡Qué bueno! Cuénteme qué anda necesitando.",
+       siNoResponde:"Si no contesta, no insista el mismo día."},
+      {mensaje:"Hola {nombre} 🙂 Habla {vendedor}. {gancho}. Ahorita tenemos promoción en varios productos. ¿Le gustaría que le explique? Lo llamo con gusto.",
+       siResponde:"Claro, deme un numerito y hora.",
+       siNoResponde:"Un solo mensaje de seguimiento a los 2 días, y ya."}
+    ],
+    whatsapp:[
+      {mensaje:"Hola {nombre} 👋 Soy {vendedor} de Su Mueble/Su Moto Danlí. Le escribo por {producto}, tenemos promoción esta semana con cuotas accesibles. ¿Le comparto los detalles?",
+       siResponde:"Sí, mándeme — envíe fotos, precio y cuotas.",
+       siNoResponde:"Si no contesta, espere unos días antes de volver a escribir."},
+      {mensaje:"Buenas {nombre}, habla {vendedor} 🙂 Vi su interés en {producto} — todavía está disponible. ¿Seguimos platicando por aquí para ver las cuotas?",
+       siResponde:"Siga la conversación normal, pregunte para qué lo necesita.",
+       siNoResponde:"Si no contesta, no insista — inténtelo después."},
+      {mensaje:"Hola {nombre}, soy {vendedor}. {producto} está disponible ahora mismo, el trámite es sencillo. ¿Le mando fotos y precio?",
+       siResponde:"Sí, mándeme — envíe fotos y precio con calma.",
+       siNoResponde:"Si no contesta, deje pasar unos días antes de volver a escribir."}
     ]
   }
 };
@@ -654,31 +699,45 @@ function vGuion(){
     +'<div class="filter-row" id="guion-tabs"></div>'
     +'<div id="guion-body"></div>';
 }
-function _guionCardFixed(tpl,nombre,producto,telefono,gancho){
-  var txt=fillScript(tpl,nombre,producto,gancho);
-  var card=document.createElement('div');card.style.cssText='background:#f7f9fc;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 14px;margin-bottom:8px;';
-  var p=document.createElement('div');p.style.cssText='font-size:13px;color:#2d3748;line-height:1.5;white-space:pre-wrap;margin-bottom:8px;';p.textContent=txt;
-  card.appendChild(p);
-  var row=document.createElement('div');row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;';
-  var btn=document.createElement('button');btn.textContent='📋 Copiar';btn.style.cssText='background:var(--bluel);border:1px solid #90cdf4;color:var(--blue2);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;';
-  btn.addEventListener('click',function(){copyScriptTxt(btn,txt);});
-  row.appendChild(btn);
-  if(telefono){
-    var wa=document.createElement('a');wa.textContent='📲 Enviar por WhatsApp';wa.target='_blank';
-    wa.href='https://wa.me/'+String(telefono).replace(/\D/g,'')+'?text='+encodeURIComponent(txt);
-    wa.style.cssText='background:#f0fff4;border:1px solid #9ae6b4;color:#276749;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;';
-    row.appendChild(wa);
-  }
-  card.appendChild(row);
-  return card;
+function fillFlow(o,nombre,producto,gancho){var r={};for(var k in o){if(o.hasOwnProperty(k))r[k]=fillScript(o[k],nombre,producto,gancho);}return r;}
+var _FLOW_THEMES={
+  llamada:{bg:'var(--card)',border:'var(--border)',label:'var(--t3)',text:'var(--t1)',btnBg:'var(--bluel)',btnColor:'var(--blue2)'},
+  voz:{bg:'#fff8e1',border:'#f6c94e',label:'#a07800',text:'#5c4400',btnBg:'#fff',btnColor:'#7a5c00'},
+  texto:{bg:'#f0fff4',border:'#9ae6b4',label:'#3a8a63',text:'#1c4532',btnBg:'#fff',btnColor:'#276749'}
+};
+function _flowBlock(theme,label,text){
+  var wrap=document.createElement('div');wrap.style.cssText='margin-bottom:9px;';
+  var lb=document.createElement('div');lb.style.cssText='font-size:10px;font-weight:700;color:'+theme.label+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;';lb.textContent=label;
+  var row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;gap:10px;align-items:flex-start;';
+  var tx=document.createElement('div');tx.style.cssText='font-size:13px;color:'+theme.text+';line-height:1.5;white-space:pre-wrap;flex:1;';tx.textContent=text;
+  var btn=document.createElement('button');btn.textContent='📋';btn.title='Copiar';btn.style.cssText='flex-shrink:0;background:'+theme.btnBg+';border:1px solid '+theme.border+';color:'+theme.btnColor+';border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer;';
+  btn.addEventListener('click',function(){copyScriptTxt(btn,text);});
+  row.appendChild(tx);row.appendChild(btn);
+  wrap.appendChild(lb);wrap.appendChild(row);
+  return wrap;
 }
-function _guionCard(tpl,bg,border,txtColor,btnBg,btnColor,gancho){
-  var txt=fillScript(tpl,'[nombre]','[producto]',gancho);
-  var card=document.createElement('div');card.style.cssText='background:'+bg+';border:1.5px solid '+border+';border-radius:var(--r);padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;';
-  var p=document.createElement('div');p.style.cssText='font-size:13px;color:'+txtColor+';line-height:1.5;flex:1;white-space:pre-wrap;';p.textContent=txt;
-  var btn=document.createElement('button');btn.textContent='📋 Copiar';btn.style.cssText='flex-shrink:0;background:'+btnBg+';border:1px solid '+border+';color:'+btnColor+';border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;';
-  btn.addEventListener('click',function(){copyScriptTxt(btn,txt);});
-  card.appendChild(p);card.appendChild(btn);
+// kind: 'llamada' | 'voz' | 'texto'. entry: objeto crudo de VENTA_SCRIPTS (sin rellenar).
+function _flowCard(kind,entry,nombre,producto,gancho,telefono){
+  var theme=_FLOW_THEMES[kind];
+  var f=fillFlow(entry,nombre,producto,gancho);
+  var card=document.createElement('div');card.style.cssText='background:'+theme.bg+';border:1.5px solid '+theme.border+';border-radius:10px;padding:13px 15px;margin-bottom:10px;';
+  if(kind==='llamada'){
+    card.appendChild(_flowBlock(theme,'🗣️ Di esto',f.apertura));
+    card.appendChild(_flowBlock(theme,'❓ Luego pregúntale',f.pregunta));
+    card.appendChild(_flowBlock(theme,'✅ Si dice que SÍ le interesa',f.siInteres));
+    card.appendChild(_flowBlock(theme,'🚫 Si dice que NO',f.siNoInteres));
+  } else {
+    card.appendChild(_flowBlock(theme,kind==='voz'?'🎙️ Esto es lo que grabas (léelo, no lo mandes escrito)':'💬 Mensaje',f.mensaje));
+    if(kind==='texto'&&telefono){
+      var waRow=document.createElement('div');waRow.style.cssText='margin:-4px 0 9px;';
+      var wa=document.createElement('a');wa.textContent='📲 Enviar este mensaje por WhatsApp';wa.target='_blank';
+      wa.href='https://wa.me/'+String(telefono).replace(/\D/g,'')+'?text='+encodeURIComponent(f.mensaje);
+      wa.style.cssText='display:inline-block;background:#fff;border:1px solid '+theme.border+';color:'+theme.btnColor+';border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;';
+      waRow.appendChild(wa);card.appendChild(waRow);
+    }
+    card.appendChild(_flowBlock(theme,'✅ Si contesta que SÍ',f.siResponde));
+    card.appendChild(_flowBlock(theme,'🚫 Si NO contesta o dice que no',f.siNoResponde));
+  }
   return card;
 }
 function renderGuion(){
@@ -695,22 +754,19 @@ function renderGuion(){
   });
   var body=document.getElementById('guion-body');body.innerHTML='';
   var sc=VENTA_SCRIPTS[_guionPool];
-  var genGancho='[gancho — ej: "ya tiene tiempo siendo cliente" o "ando platicando con clientes de la zona"]';
+  var genGancho='ya tiene tiempo siendo cliente / ando platicando con clientes de la zona (ajusta según el cliente)';
   var vzSec=document.createElement('div');vzSec.style.cssText='margin-bottom:22px;';
   var vzH=document.createElement('div');vzH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';vzH.textContent='🎙️ Nota de voz (WhatsApp) — tono de expectativa, no de venta';vzSec.appendChild(vzH);
   var vzHint=document.createElement('div');vzHint.style.cssText='font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5;';vzHint.textContent='Grábalo hablado, natural — no lo mandes como texto. La idea es generar curiosidad y que el cliente pida que lo llames, no cerrar la venta por aquí.';vzSec.appendChild(vzHint);
-  sc.notaVoz.forEach(function(tpl){vzSec.appendChild(_guionCard(tpl,'#fff8e1','#f6c94e','#7a5c00','#fff','#7a5c00',genGancho));});
+  sc.notaVoz.forEach(function(entry){vzSec.appendChild(_flowCard('voz',entry,'[nombre]','[producto]',genGancho,null));});
   body.appendChild(vzSec);
   var callSec=document.createElement('div');callSec.style.cssText='margin-bottom:22px;';
   var callH=document.createElement('div');callH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';callH.textContent='📞 Para llamadas';callSec.appendChild(callH);
-  var estBox=document.createElement('div');estBox.style.cssText='background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--t2);line-height:1.7;';
-  estBox.innerHTML='<b style="color:var(--t1);">Estructura básica:</b><br>'+sc.estructura.map(function(s,i){return (i+1)+'. '+s;}).join('<br>');
-  callSec.appendChild(estBox);
-  sc.llamada.forEach(function(tpl){callSec.appendChild(_guionCard(tpl,'var(--card)','var(--border)','var(--t1)','var(--bluel)','var(--blue2)'));});
+  sc.llamada.forEach(function(entry){callSec.appendChild(_flowCard('llamada',entry,'[nombre]','[producto]',null,null));});
   body.appendChild(callSec);
   var waSec=document.createElement('div');
   var waH=document.createElement('div');waH.style.cssText='font-size:13px;font-weight:700;color:var(--t1);margin:10px 0;';waH.textContent='💬 Para WhatsApp (texto)';waSec.appendChild(waH);
-  sc.whatsapp.forEach(function(tpl){waSec.appendChild(_guionCard(tpl,'#f0fff4','#9ae6b4','#276749','#fff','#276749'));});
+  sc.whatsapp.forEach(function(entry){waSec.appendChild(_flowCard('texto',entry,'[nombre]','[producto]',null,null));});
   body.appendChild(waSec);
 }
 // Metas mensuales por usuario y cartera. unidades=meta de ventas/unidades, monto=meta en L. (opcional)
@@ -2369,11 +2425,11 @@ function openKbCard(el){
         gPanel.dataset.built='1';
         var sc=VENTA_SCRIPTS[ventaPoolIdFor(_gCart)];
         var vh=document.createElement('div');vh.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;margin:8px 0;';vh.textContent='🎙️ Nota de voz (léela, no la mandes como texto)';gPanel.appendChild(vh);
-        sc.notaVoz.forEach(function(tpl){gPanel.appendChild(_guionCardFixed(tpl,c.nombre,_gProducto,null,_gGancho));});
+        sc.notaVoz.forEach(function(entry){gPanel.appendChild(_flowCard('voz',entry,c.nombre,_gProducto,_gGancho,null));});
         var ch=document.createElement('div');ch.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;margin:12px 0 8px;';ch.textContent='📞 Para llamada';gPanel.appendChild(ch);
-        sc.llamada.forEach(function(tpl){gPanel.appendChild(_guionCardFixed(tpl,c.nombre,_gProducto,null));});
+        sc.llamada.forEach(function(entry){gPanel.appendChild(_flowCard('llamada',entry,c.nombre,_gProducto,null,null));});
         var wh=document.createElement('div');wh.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;margin:12px 0 8px;';wh.textContent='💬 Para WhatsApp (texto)';gPanel.appendChild(wh);
-        sc.whatsapp.forEach(function(tpl){gPanel.appendChild(_guionCardFixed(tpl,c.nombre,_gProducto,c.telefono||null));});
+        sc.whatsapp.forEach(function(entry){gPanel.appendChild(_flowCard('texto',entry,c.nombre,_gProducto,null,c.telefono||null));});
       }
     } else {gPanel.style.display='none';gToggle.textContent='💡 Ver guion de venta';}
   };
