@@ -356,9 +356,22 @@ var waConvs=[],waActivePhone=null,waActiveCanal='whatsapp',waFilter='todos',waEm
 function sbF(t,m,b,q){return fetch(SB_URL+'/rest/v1/'+t+(q||''),{method:m||'GET',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':m==='POST'?'resolution=merge-duplicates':''},...(b?{body:JSON.stringify(b)}:{})}).then(function(r){if(!r.ok)return null;return(m||'GET')==='GET'?r.json():true;}).catch(function(){return null;});}
 function sbUp(t,d){return sbF(t,'POST',Array.isArray(d)?d:[d]);}
 function sbDel(t,q){return sbF(t,'DELETE',null,q);}
-function saveCtoSB(c,cid){sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',payments:c.payments||[]});}
-function saveCalltoSB(call){sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
-function saveLeadToSB(l){sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null,assigned_to:l.assignedTo||null,lead_cartera:l.leadCartera||null});}
+function saveCtoSB(c,cid){return sbUp('clientes',{id:c.id,cartera_id:cid,nombre:c.nombre,telefono:c.telefono||null,estado:c.estado||'pendiente',kb_col:c.kbCol||null,kb_comments:c.kbComments||[],total_pagos:c.totalPagos||0,monto_total:c.montoTotal||0,ultimo_pago:c.ultimoPago||null,primer_pago:c.primerPago||null,antiguedad:c.antiguedad||0,patron:c.patron||'Mensual',payments:c.payments||[]});}
+function saveCalltoSB(call){return sbUp('gestiones',{id:call.id,client_id:call.clientId,cartera_id:call.carteraId,user_id:call.userId,user_name:call.userName,date_str:call.date,date_iso:call.dateISO,resultado:call.resultado,estado:call.estado,producto:call.producto||null,notas:call.notas||null,num2:call.num2||null});}
+function saveLeadToSB(l){return sbUp('leads',{id:l.id,nombre:l.nombre,telefono:l.telefono||null,fecha_contacto:l.fechaContacto||null,fuente:l.fuente||null,producto:l.producto||null,notas:l.notas||null,lead_col:l.leadCol||'nl',kb_comments:l.kbComments||[],created_by:l.createdBy||null,created_at:l.createdAt||null,assigned_to:l.assignedTo||null,lead_cartera:l.leadCartera||null});}
+// Reintenta una escritura fallida a Supabase cada 15s hasta 4 veces; si todas fallan, avisa claro al usuario
+function sbUpConAviso(fn,args,mensajeError){
+  var intento=0;
+  function tryOnce(){
+    intento++;
+    fn.apply(null,args).then(function(ok){
+      if(ok)return;
+      if(intento<4){setTimeout(tryOnce,15000);}
+      else alert('⚠️ No se pudo guardar en el servidor: '+mensajeError+'\n\nRevisa tu conexión a internet y vuelve a intentarlo — de lo contrario esto NO lo va a ver nadie más (ni el administrador en Monitor).');
+    });
+  }
+  tryOnce();
+}
 function loadFromSB(){
   // Fetch all pages from Supabase (max 1000 per page)
   function fetchAll(table,query){
@@ -1268,7 +1281,9 @@ function saveCall(){
   var call={id:Date.now()+'',clientId:clientId,carteraId:cid,userId:CU.id,userName:CU.name,carteraVend:CU.cartera||null,date:dateStr,dateISO:dateISO,resultado:res,estado:est,producto:prod,notas:nota,num2:num2};
   DB.calls.push(call);if(DB.calls.length>1000)DB.calls.splice(0,DB.calls.length-1000);
   var c=(DB.clients[cid]||[]).find(function(x){return x.id===clientId;});if(c)c.estado=est;
-  saveDB();saveCalltoSB(call);if(c)saveCtoSB(c,cid);
+  saveDB();
+  sbUpConAviso(saveCalltoSB,[call],'la gestión de '+(c?c.nombre:'este cliente'));
+  if(c)saveCtoSB(c,cid);
   logAct(CU.name+' gestionó '+(c?c.nombre:'cliente')+' — '+res.replace(/-/g,' '),cid);
   closeMov('mov-call');renderCards();buildSB();toast('Gestión registrada ✓','ok');
 }
@@ -1515,7 +1530,7 @@ function _addMV(uid,cid,mes,unidades,monto){
   var rec={id:id,clientId:null,carteraId:cid,userId:uid,userName:CU.name,date:now.toLocaleDateString('es-HN',{day:'2-digit',month:'2-digit',year:'numeric'}),dateISO:now.toISOString().slice(0,10),resultado:'venta-manual',estado:'meta_manual',producto:'',notas:JSON.stringify({unidades:unidades||0,monto:monto||0,ts:Date.now()}),num2:''};
   DB.calls.push(rec);
   saveDB();
-  sbUp('gestiones',{id:rec.id,client_id:null,cartera_id:rec.carteraId,user_id:rec.userId,user_name:rec.userName,date_str:rec.date,date_iso:rec.dateISO,resultado:rec.resultado,estado:rec.estado,producto:rec.producto,notas:rec.notas,num2:rec.num2});
+  sbUpConAviso(sbUp,['gestiones',{id:rec.id,client_id:null,cartera_id:rec.carteraId,user_id:rec.userId,user_name:rec.userName,date_str:rec.date,date_iso:rec.dateISO,resultado:rec.resultado,estado:rec.estado,producto:rec.producto,notas:rec.notas,num2:rec.num2}],'la venta manual de '+(unidades||0)+' unidad(es) no quedó guardada');
 }
 function _delMV(uid,cid,mes,id){
   DB.calls=DB.calls.filter(function(c){return c.id!=id;});
@@ -2461,7 +2476,7 @@ function openKbCard(el){
   var clbl=document.createElement('div');clbl.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px;';clbl.textContent='💬 Agregar comentario de seguimiento';
   var ta2=document.createElement('textarea');ta2.style.cssText='width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;min-height:72px;resize:vertical;font-family:inherit;margin-bottom:10px;transition:border-color .15s;';ta2.placeholder='Ej: Se llamó pero estaba trabajando. Acordamos llamar el viernes a las 3pm...';ta2.onfocus=function(){this.style.borderColor='var(--blue)';};ta2.onblur=function(){this.style.borderColor='#e2e8f0';};
   var ab=document.createElement('button');ab.style.cssText='width:100%;padding:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:20px;box-shadow:0 3px 10px rgba(91,141,238,.3);';ab.textContent='💬 Guardar comentario';
-  ab.onclick=function(){var txt=ta2.value.trim();if(!txt)return;if(!c.kbComments)c.kbComments=[];var now=new Date();c.kbComments.push({texto:txt,autor:CU.name,fecha:now.toLocaleDateString('es-HN',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+now.toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'})});saveDB();if(!isLead){saveCtoSB(c,cid);regActividad('comentario-kanban',c.nombre,cid,txt.slice(0,60));}else{saveLeadToSB(c);regActividad('comentario-lead',c.nombre,'leads',txt.slice(0,60));}ta2.value='';renderCH();renderKanban();toast('Comentario guardado','ok');};
+  ab.onclick=function(){var txt=ta2.value.trim();if(!txt)return;if(!c.kbComments)c.kbComments=[];var now=new Date();c.kbComments.push({texto:txt,autor:CU.name,fecha:now.toLocaleDateString('es-HN',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+now.toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'})});saveDB();if(!isLead){sbUpConAviso(saveCtoSB,[c,cid],'el comentario de '+c.nombre);regActividad('comentario-kanban',c.nombre,cid,txt.slice(0,60));}else{sbUpConAviso(saveLeadToSB,[c],'el comentario de '+c.nombre);regActividad('comentario-lead',c.nombre,'leads',txt.slice(0,60));}ta2.value='';renderCH();renderKanban();toast('Comentario guardado','ok');};
   body.appendChild(clbl);body.appendChild(ta2);body.appendChild(ab);
   var ch=document.createElement('div');
   function renderCH(){ch.innerHTML='';var hl2=document.createElement('div');hl2.style.cssText='font-size:11px;font-weight:700;color:#a0aec0;text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;';hl2.textContent='📋 Historial de seguimiento ('+(c.kbComments||[]).length+')';ch.appendChild(hl2);if(!(c.kbComments||[]).length){var em=document.createElement('div');em.style.cssText='font-size:13px;color:#a0aec0;padding:10px 0;';em.textContent='Sin comentarios aún. Agrega el primero.';ch.appendChild(em);return;}var cl=document.createElement('div');cl.style.cssText='max-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch;';(c.kbComments||[]).slice().reverse().forEach(function(cm){var e=document.createElement('div');e.style.cssText='background:#f7f9fc;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:8px;';var top=document.createElement('div');top.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:6px;';var fd=document.createElement('span');fd.style.cssText='font-size:11px;font-weight:700;color:var(--blue);';fd.textContent=cm.fecha;var au=document.createElement('span');au.style.cssText='font-size:11px;color:#a0aec0;margin-left:auto;background:#edf2f7;padding:2px 8px;border-radius:20px;';au.textContent=cm.autor;var tx=document.createElement('div');tx.style.cssText='font-size:13px;line-height:1.5;color:#2d3748;';tx.textContent=cm.texto;top.appendChild(fd);top.appendChild(au);e.appendChild(top);e.appendChild(tx);cl.appendChild(e);});ch.appendChild(cl);}
