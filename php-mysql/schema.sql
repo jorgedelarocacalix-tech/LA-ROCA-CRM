@@ -178,3 +178,41 @@ CREATE TABLE IF NOT EXISTS mensajes_internos (
   leido_por  JSON NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── WHATSAPP (reconstruido — ver php-mysql/README.md sección "Módulo de WhatsApp") ──
+-- Backend original (Node.js/Express + Twilio) nunca se subió a GitHub, vivía sólo en la
+-- máquina local del dueño. Este esquema replica lo documentado en CONTEXT.md para el
+-- backend de Twilio Sandbox (el WhatsApp Business real de Meta sigue desactivado).
+
+-- Una fila por contacto/número. `estado` es una etiqueta simple derivada del último
+-- movimiento (no hay análisis con IA en esta versión): 'pregunta' = llegó un mensaje
+-- entrante sin responder todavía, 'enviado' = se le mandó un envío masivo, NULL = ya
+-- se le respondió individualmente / sin novedad.
+CREATE TABLE IF NOT EXISTS wa_conversaciones (
+  telefono       VARCHAR(30) PRIMARY KEY,
+  nombre         VARCHAR(150) NULL,
+  empresa        VARCHAR(100) NULL,
+  canal          VARCHAR(20) NOT NULL DEFAULT 'whatsapp',
+  estado         VARCHAR(30) NULL,
+  ultimo_mensaje VARCHAR(255) NULL,
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Historial de mensajes. direccion: entrante (del cliente) | saliente (nuestro).
+-- entrega: enviado -> sent -> delivered -> read / failed (actualizado por
+-- api/whatsapp/status_callback.php cuando Twilio notifica cambios de estado).
+-- twilio_sid: SID del mensaje en Twilio, usado para casar el status callback.
+CREATE TABLE IF NOT EXISTS wa_mensajes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  telefono   VARCHAR(30) NOT NULL,
+  direccion  ENUM('entrante','saliente') NOT NULL,
+  contenido  TEXT NULL,
+  media_url  VARCHAR(500) NULL,
+  timestamp  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  twilio_sid VARCHAR(64) NULL,
+  entrega    VARCHAR(20) NULL DEFAULT 'enviado',
+  KEY idx_wa_mensajes_telefono (telefono),
+  KEY idx_wa_mensajes_sid (twilio_sid),
+  CONSTRAINT fk_wa_mensajes_telefono FOREIGN KEY (telefono) REFERENCES wa_conversaciones(telefono) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

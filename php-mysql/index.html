@@ -240,6 +240,38 @@ button{cursor:pointer}
 .cat-badge{font-size:14px!important;padding:5px 12px!important}
 .cl-date,.cl-user{font-size:14px!important}
 
+/* WhatsApp Chat */
+.wa-wrap{display:flex;height:calc(100vh - 108px);background:var(--card);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow)}
+.wa-side{width:300px;border-right:1.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--card)}
+.wa-side-hdr{padding:12px 14px;border-bottom:1px solid var(--border)}
+.wa-filt{display:flex;gap:5px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--border);background:#f7f9fc}
+.wa-list{flex:1;overflow-y:auto}
+.wa-ci{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;gap:10px;align-items:flex-start}
+.wa-ci:hover,.wa-ci.on{background:var(--bluel)}
+.wa-ci-av{width:38px;height:38px;border-radius:50%;background:var(--bluel);color:var(--blue);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase}
+.wa-ci-info{flex:1;min-width:0}
+.wa-ci-nm{font-size:13px;font-weight:600;color:var(--t1);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.wa-ci-msg{font-size:11px;color:var(--t2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wa-chat{flex:1;display:flex;flex-direction:column;min-width:0}
+.wa-chat-hdr{padding:13px 18px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--card);flex-shrink:0}
+.wa-chat-av{width:36px;height:36px;border-radius:50%;background:var(--bluel);color:var(--blue);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase}
+.wa-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:7px;background:#e8edf5}
+.wa-bubble{max-width:68%;border-radius:13px;padding:9px 13px;font-size:13px;line-height:1.45;word-wrap:break-word}
+.wa-bubble.in{background:#fff;border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:3px}
+.wa-bubble.out{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.wa-btime{font-size:10px;opacity:.55;margin-top:3px;text-align:right}
+.wa-inp-bar{padding:10px 14px;border-top:1.5px solid var(--border);display:flex;gap:8px;align-items:flex-end;background:var(--card);flex-shrink:0}
+.wa-inp{flex:1;padding:10px 14px;background:#f7f9fc;border:1.5px solid var(--border);border-radius:20px;font-size:13px;resize:none;min-height:40px;max-height:110px;font-family:inherit;color:var(--t1);transition:border-color .15s;line-height:1.4}
+.wa-inp:focus{border-color:var(--blue);background:#fff;outline:none}
+.wa-btn-rnd{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;transition:transform .1s}
+.wa-btn-rnd:active{transform:scale(.9)}
+.wa-btn-send{background:var(--blue);color:#fff}
+.wa-btn-img{background:#f7f9fc;border:1.5px solid var(--border)!important}
+.wa-empty-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);gap:12px;background:#e8edf5}
+.wa-stbadge{font-size:13px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.wa-st-interesado{background:var(--greenl);color:#276749}.wa-st-no_interesado{background:var(--redl);color:#c53030}.wa-st-enviado{background:var(--bluel);color:var(--blue2)}.wa-st-pregunta{background:var(--amberl);color:#c05621}
+@media(max-width:780px){.wa-wrap{height:calc(100vh - 60px);border-radius:0;position:relative}.wa-side{width:100%;position:absolute;inset:0;z-index:2}.wa-chat{position:absolute;inset:0;z-index:1;display:none}.wa-wrap.wa-open .wa-chat{display:flex}.wa-wrap.wa-open .wa-side{display:none}}
+
 </style>
 </head>
 <body>
@@ -919,16 +951,16 @@ function buildSB(){
   function ni(id,ic,lbl,view){var d=document.createElement('div');d.className='ni';d.id='ni-'+id;d.innerHTML='<span class="ni-ic">'+ic+'</span>'+lbl;d.addEventListener('click',function(){goTo(view);});n.appendChild(d);}
   function sec(lbl){var d=document.createElement('div');d.style.cssText='padding:10px 8px 4px;font-size:13px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:6px;';d.textContent=lbl;n.appendChild(d);}
   if(CU.role==='admin'){
-    sec('Principal');ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');
+    sec('Principal');ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
     sec('Equipo');ni('guion','💡','Guion de venta','guion');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     sec('Gestión');ni('subir','📤','Subir cartera','subir');ni('equipo','👤','Equipo','equipo');ni('monitor','📡','Monitor','monitor');
   } else if(CU.role==='subadmin'){
-    ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');
+    ni('dashboard','📊','Dashboard','dashboard');ni('clientes','👥','Clientes','clientes');ni('kanban','⊞','Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
     ni('guion','💡','Guion de venta','guion');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     ni('monitor','📡','Monitor','monitor');
     if(METAS[CU.id])ni('meta','🎯','Mi Meta','meta');
   } else {
-    ni('clientes','👥','Mis clientes','clientes');ni('kanban','⊞','Mi Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');
+    ni('clientes','👥','Mis clientes','clientes');ni('kanban','⊞','Mi Kanban','kanban');ni('seguimiento','📅','Seguimiento','seguimiento');ni('whatsapp','💬','WhatsApp','whatsapp');
     ni('guion','💡','Guion de venta','guion');ni('mensajes','💬','Mensajes','mensajes');ni('recursos','📁','Recursos','recursos');
     if(METAS[CU.id])ni('meta','🎯','Mi Meta','meta');
   }
@@ -937,7 +969,7 @@ function buildSB(){
 function goTo(view){
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('on');});
   var ni=document.getElementById('ni-'+view);if(ni)ni.classList.add('on');
-  document.getElementById('tb-ttl').textContent={dashboard:'Dashboard',clientes:'Clientes',kanban:'Kanban',seguimiento:'Seguimiento',subir:'Subir Cartera',equipo:'Equipo',monitor:'Monitor',mensajes:'Mensajes',recursos:'Recursos',meta:'Mi Meta',guion:'Guion de venta'}[view]||view;
+  document.getElementById('tb-ttl').textContent={dashboard:'Dashboard',clientes:'Clientes',kanban:'Kanban',seguimiento:'Seguimiento',subir:'Subir Cartera',equipo:'Equipo',monitor:'Monitor',whatsapp:'WhatsApp',mensajes:'Mensajes',recursos:'Recursos',meta:'Mi Meta',guion:'Guion de venta'}[view]||view;
   var chip=document.getElementById('tb-chip');
   if(view==='clientes'&&activeCart){var cx=DB.carteras.find(function(x){return x.id===activeCart;});chip.textContent=cx?cx.name:'';chip.style.display='';}else chip.style.display='none';
   var pc=document.getElementById('pcontent');
@@ -948,6 +980,7 @@ function goTo(view){
   else if(view==='subir'){pc.innerHTML=vSubir();initUpload();}
   else if(view==='equipo'){pc.innerHTML=vEquipo();}else if(view==='monitor'){pc.innerHTML=vMonitor();initMonitor();}
   else if(view==='recursos'){pc.innerHTML=vRecursos();renderRecursos();}
+  else if(view==='whatsapp'){pc.innerHTML=vWhatsApp();waInit();}
   else if(view==='mensajes'){pc.innerHTML=vMensajes();renderMensajes();}
   else if(view==='meta'){pc.innerHTML=vMeta();}
   else if(view==='guion'){pc.innerHTML=vGuion();renderGuion();}
@@ -3502,6 +3535,341 @@ function sendMsg(btn){
   btn.disabled=true;btn.textContent='Enviando...';
   sbUp('mensajes_internos',{from_name:CU.name,from_role:CU.role,to_user:to,mensaje:txt,tipo:'admin',leido_por:[CU.name]})
   .then(function(){btn.closest('.mov').remove();toast('Mensaje enviado ✓','ok');renderMensajes();});
+}
+
+// ── WhatsApp (Twilio Sandbox — reconstruido; ver README.md "Módulo de WhatsApp") ──
+// El backend ya no es Node.js/ngrok: todo pega a api/whatsapp/*.php en este mismo
+// servidor. No hay análisis con IA en esta versión (ni "Análisis del día" ni
+// recomendación por conversación) — decisión explícita del dueño de no pagar por
+// funciones de IA en esta migración.
+var WA_API='api/whatsapp/';
+var waConvs=[],waActivePhone=null,waFilter='todos',waEmpresaFilt='todas',waPollingTimer=null,waPendingMasivo=[],_waConvsLoaded=false,_waImgCache={};
+
+function vWhatsApp(){
+  var empChips='<button class="ytab on" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\'todas\')">Todas</button>'
+    +DB.carteras.map(function(cart){return '<button class="ytab" style="font-size:11px;padding:4px 9px;" onclick="waFiltEmp(this,\''+cart.name.replace(/'/g,"\\'")+'\')">'+cart.name+'</button>';}).join('');
+  return '<div class="page-hdr" style="margin-bottom:16px;"><div class="page-ttl">💬 WhatsApp</div>'+
+  '<div style="display:flex;gap:8px;">'+
+  '<button class="btn-p" style="font-size:13px;" onclick="waModalMasivo()">📤 Envío masivo</button>'+
+  '</div></div>'+
+  '<div class="notice" style="margin-bottom:12px;">📱 Conectado al <strong>Sandbox de pruebas de Twilio</strong> — sólo puede escribirle a números que ya mandaron <code>join men-husband</code> al +1 415 523 8886. El WhatsApp Business real está desactivado por Meta (ver README.md).</div>'+
+  '<div class="wa-wrap" id="wa-wrap">'+
+  '<div class="wa-side" id="wa-side">'+
+  '<div class="wa-side-hdr"><input class="srch" id="wa-srch" placeholder="Buscar cliente..." oninput="waRenderList()" style="width:100%;max-width:none;"/></div>'+
+  '<div class="wa-filt" id="wa-filt-emp" style="border-bottom:1px solid var(--border);padding-bottom:4px;">'+empChips+'</div>'+
+  '<div class="wa-filt" id="wa-filt">'+
+  '<button class="ytab on" onclick="waFilt(this,\'todos\')">Todos</button>'+
+  '<button class="ytab" onclick="waFilt(this,\'pregunta\')">❓ Sin responder</button>'+
+  '<button class="ytab" onclick="waFilt(this,\'enviado\')">📤 Enviados</button>'+
+  '</div>'+
+  '<div class="wa-list" id="wa-list"><div class="empty-st"><div class="ei">⏳</div>Cargando...</div></div>'+
+  '</div>'+
+  '<div class="wa-chat" id="wa-chat"><div class="wa-empty-chat"><div style="font-size:48px;">💬</div><div style="font-size:14px;font-weight:500;">Selecciona una conversación</div></div></div>'+
+  '</div>';
+}
+
+function waInit(){
+  waActivePhone=null;waFilter='todos';waEmpresaFilt='todas';
+  waLoadConvs();
+  if(waPollingTimer)clearInterval(waPollingTimer);
+  waPollingTimer=setInterval(function(){
+    if(!document.getElementById('wa-list')){clearInterval(waPollingTimer);waPollingTimer=null;return;}
+    waLoadConvs();
+    if(waActivePhone)waLoadMessages(waActivePhone);
+  },5000);
+}
+
+function waH(){return{'Content-Type':'application/json'};}
+function waFetch(path,opts){return fetch(WA_API+path,Object.assign({credentials:'same-origin'},opts||{})).then(function(r){if(r.status===401){location.reload();return null;}return r.json();});}
+
+function waLoadConvs(){
+  waFetch('conversaciones.php')
+  .then(function(d){waConvs=d||[];_waConvsLoaded=true;waRenderList();})
+  .catch(function(){var l=document.getElementById('wa-list');if(l)l.innerHTML='<div class="empty-st"><div class="ei">⚠️</div>Sin conexión al servidor</div>';});
+}
+
+function waFilt(el,f){
+  waFilter=f;
+  document.querySelectorAll('#wa-filt .ytab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');waRenderList();
+}
+function waFiltEmp(el,e){
+  waEmpresaFilt=e;
+  document.querySelectorAll('#wa-filt-emp .ytab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');waRenderList();
+}
+
+var _waStMap={enviado:'wa-st-enviado',pregunta:'wa-st-pregunta'};
+var _waStLbl={enviado:'📤 Enviado',pregunta:'❓ Sin responder'};
+
+function waRenderList(){
+  var srch=((document.getElementById('wa-srch')||{}).value||'').toLowerCase();
+  var l=document.getElementById('wa-list');if(!l)return;
+  var f=waConvs.filter(function(c){
+    return(waFilter==='todos'||c.estado===waFilter)
+      &&(waEmpresaFilt==='todas'||(c.empresa||'')===waEmpresaFilt)
+      &&(!srch||(c.nombre||'').toLowerCase().includes(srch)||(c.telefono||'').includes(srch));
+  });
+  if(!f.length){l.innerHTML='<div class="empty-st"><div class="ei">💬</div>Sin conversaciones</div>';return;}
+  l.innerHTML=f.map(function(c){
+    var init=(c.nombre||c.telefono||'?')[0];
+    var sc=_waStMap[c.estado]||'';var sl=_waStLbl[c.estado]||'';
+    var safeT=(c.telefono||'').replace(/\\/g,'\\\\').replace(/'/g,'\\\'');
+    return '<div class="wa-ci'+(c.telefono===waActivePhone?' on':'')+'" onclick="waOpenConv(\''+safeT+'\')">'
+    +'<div class="wa-ci-av">'+init+'</div>'
+    +'<div class="wa-ci-info">'
+    +'<div class="wa-ci-nm"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(c.nombre||c.telefono)+'</span>'
+    +(sc?'<span class="wa-stbadge '+sc+'">'+sl+'</span>':'')
+    +'</div>'
+    +'<div class="wa-ci-msg">'+(c.ultimo_mensaje||'')+'</div>'
+    +'</div></div>';
+  }).join('');
+}
+
+function waOpenConv(tel){
+  waActivePhone=tel;
+  var w=document.getElementById('wa-wrap');if(w)w.classList.add('wa-open');
+  waRenderList();
+  var conv=waConvs.find(function(c){return c.telefono===tel;})||{};
+  var nombre=conv.nombre||tel;var empresa=conv.empresa||'';
+  var panel=document.getElementById('wa-chat');if(!panel)return;
+  var safeT=tel.replace(/\\/g,'\\\\').replace(/'/g,'\\\'');
+  var inputBar='<div class="wa-inp-bar">'
+    +'<label class="wa-btn-rnd wa-btn-img" style="border:1.5px solid var(--border);cursor:pointer;" title="Enviar imagen">'
+    +'<input type="file" accept="image/*" style="display:none" onchange="waUploadArchivo(this,\''+safeT+'\',\'imagen\')" />🖼</label>'
+    +'<label class="wa-btn-rnd" style="border:1.5px solid var(--border);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:16px;" title="Enviar PDF">'
+    +'<input type="file" accept=".pdf,application/pdf" style="display:none" onchange="waUploadArchivo(this,\''+safeT+'\',\'pdf\')" />📄</label>'
+    +'<textarea class="wa-inp" id="wa-inp" placeholder="Escribe un mensaje..." rows="1" '
+    +'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();waSend();}"></textarea>'
+    +'<button class="wa-btn-rnd wa-btn-send" onclick="waSend()">➤</button>'
+    +'</div>';
+  panel.innerHTML=
+  '<div class="wa-chat-hdr">'
+  +'<div class="wa-chat-av">'+(nombre[0]||'?')+'</div>'
+  +'<div style="flex:1;min-width:0;">'
+  +'<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nombre+'</div>'
+  +'<div style="font-size:11px;color:var(--t2);">'+empresa+(empresa?' · ':'')+tel+'</div>'
+  +'</div></div>'
+  +'<div class="wa-msgs" id="wa-msgs"><div class="empty-st"><div class="ei">⏳</div></div></div>'
+  +inputBar;
+  waLoadMessages(tel);
+}
+
+function waLoadMessages(tel){
+  waFetch('mensajes.php?telefono='+encodeURIComponent(tel))
+  .then(function(msgs){
+    var el=document.getElementById('wa-msgs');if(!el)return;
+    var wasAtBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;
+    if(!msgs||!msgs.length){el.innerHTML='<div class="empty-st"><div class="ei">💬</div>Sin mensajes</div>';return;}
+    var prevScroll=el.scrollTop;
+    el.innerHTML=msgs.map(function(m){
+      var out=m.direccion==='saliente';
+      var t=new Date(m.timestamp).toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});
+      var body='';
+      if(m.media_url){
+        var isPdf=m.media_url.toLowerCase().includes('.pdf')||(m.contenido||'').toLowerCase().includes('pdf');
+        if(isPdf){
+          var nombrePdf=m.contenido&&!m.contenido.includes('📄')?m.contenido:(m.media_url.split('/').pop()||'documento.pdf').replace(/^\d+-[a-z0-9]+\./,'')||'documento.pdf';
+          var pdfHref=m.media_url.includes('twilio.com')?WA_API+'media_proxy.php?url='+encodeURIComponent(m.media_url):m.media_url;
+          body+='<a href="'+pdfHref+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.06);padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;font-weight:600;margin-bottom:4px;">📄 '+nombrePdf+'</a>';
+        } else {
+          if(m.media_url.includes('twilio.com')){
+            var imgId='wimg-'+Math.random().toString(36).slice(2);
+            var cachedSrc=_waImgCache[m.media_url]||'';
+            body+='<img id="'+imgId+'" src="'+cachedSrc+'" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;min-height:'+(cachedSrc?'0':'40')+'px;background:'+(cachedSrc?'transparent':'#f0f0f0')+'" />';
+            if(!cachedSrc){
+              setTimeout(function(id,url){
+                fetch(WA_API+'media_proxy.php?url='+encodeURIComponent(url),{credentials:'same-origin'})
+                .then(function(r){return r.blob();})
+                .then(function(b){
+                  var el2=document.getElementById(id);if(!el2)return;
+                  var blobUrl=URL.createObjectURL(b);
+                  _waImgCache[url]=blobUrl;
+                  el2.src=blobUrl;el2.style.minHeight='0';el2.style.background='transparent';
+                })
+                .catch(function(){});
+              }.bind(null,imgId,m.media_url),0);
+            }
+          } else {
+            body+='<img src="'+m.media_url+'" style="max-width:200px;border-radius:8px;display:block;margin-bottom:4px;" />';
+          }
+        }
+      }
+      body+=(m.contenido&&m.contenido!=='[📄 PDF]'&&m.contenido!=='[📷 Imagen]'?m.contenido:'');
+      return '<div class="wa-bubble '+(out?'out':'in')+'">'+body+'<div class="wa-btime">'+t+'</div></div>';
+    }).join('');
+    if(wasAtBottom){el.scrollTop=el.scrollHeight;}else{el.scrollTop=prevScroll;}
+  })
+  .catch(function(e){console.error('wa-msgs:',e);});
+}
+
+function waSend(){
+  var inp=document.getElementById('wa-inp');
+  if(!inp||!waActivePhone)return;
+  var msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  waFetch('responder.php',{method:'POST',headers:waH(),body:JSON.stringify({telefono:waActivePhone,mensaje:msg})})
+  .then(function(d){if(!d||!d.ok)toast(d&&d.error?d.error:'Error al enviar (revisa el opt-in del Sandbox)','err');waLoadMessages(waActivePhone);waLoadConvs();})
+  .catch(function(){toast('Error al enviar','err');});
+}
+
+// Sube una imagen o PDF a uploads/wa/ (api/whatsapp/upload_b64.php) y luego lo
+// manda por Twilio (api/whatsapp/enviar_imagen_url.php). Reemplaza el flujo viejo
+// que subía imágenes a imgbb.com (servicio externo de terceros) — ahora todo se
+// guarda en nuestro propio servidor.
+function waUploadArchivo(input,tel,kind){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  var maxMB=kind==='pdf'?10:8;
+  if(file.size>maxMB*1024*1024){toast('El archivo no puede pesar más de '+maxMB+' MB','err');input.value='';return;}
+  toast(kind==='pdf'?'Subiendo PDF...':'Subiendo imagen...','');
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var base64=e.target.result.split(',')[1];
+    waFetch('upload_b64.php',{method:'POST',headers:waH(),body:JSON.stringify({base64:base64,nombre:file.name,tipo:file.type||(kind==='pdf'?'application/pdf':'image/jpeg')})})
+    .then(function(d){
+      if(!d||!d.ok)throw new Error(d&&d.error?d.error:'Error al subir');
+      return waFetch('enviar_imagen_url.php',{method:'POST',headers:waH(),body:JSON.stringify({telefono:tel,mediaUrl:d.url,contenido:kind==='pdf'?'[📄 PDF]':''})});
+    })
+    .then(function(d){
+      if(!d||!d.ok){toast(d&&d.error?d.error:'Error al enviar','err');return;}
+      toast((kind==='pdf'?'PDF':'Imagen')+' enviado ✅','ok');waLoadMessages(tel);waLoadConvs();
+    })
+    .catch(function(e){toast('Error al enviar '+(kind==='pdf'?'PDF':'imagen'),'err');console.error(e);});
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function waModalMasivo(){
+  waPendingMasivo=[];
+  DB.carteras.forEach(function(cart){
+    (DB.clients[cart.id]||[]).forEach(function(c){
+      if(c.telefono)waPendingMasivo.push({nombre:c.nombre,telefono:c.telefono,cartera:cart.id});
+    });
+  });
+  if(!waPendingMasivo.length){toast('No hay clientes con número registrado','err');return;}
+  window._waMasivoPlantillas=[
+    {titulo:'🎁 Regalo / Curiosidad',texto:'👋 Hola [Nombre], te saluda Jorge de La Roca Comercial. Tengo algo reservado para vos en tu próxima compra 🎁 ¿Te cuento de qué se trata?'},
+    {titulo:'📺 Promos TV y Motos',texto:'😊 Hola [Nombre], te habla Jorge de La Roca Comercial. Esta semana tenemos promociones especiales en televisores y motos que creo te pueden interesar. ¿Te paso los detalles?'},
+    {titulo:'⏰ Oferta por tiempo limitado',texto:'👋 Hola [Nombre], soy Jorge de La Roca Comercial. Tenemos ofertas por tiempo limitado en TVs y motos con cuotas cómodas 🏍️📺 ¿Querés que te cuente cómo aplicar?'},
+    {titulo:'🎁 Sorpresa para clientes',texto:'Hola [Nombre] 👋 Te saluda Jorge de La Roca Comercial. Tengo una sorpresa guardada para vos por ser cliente nuestro 🎁 ¿Te llamo o te cuento aquí por WhatsApp?'}
+  ];
+  var sampleNombre=((waPendingMasivo[0]&&waPendingMasivo[0].nombre)||'Cliente').split(' ')[0];
+  var plantillasHtml=window._waMasivoPlantillas.map(function(p,i){
+    return '<label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;margin-bottom:6px;">'
+    +'<input type="radio" name="wa-plantilla" value="'+i+'" '+(i===0?'checked':'')+' onchange="waMasivoSelectPlantilla('+i+')" style="margin-top:3px;accent-color:var(--blue);">'
+    +'<div><div style="font-weight:600;font-size:13px;margin-bottom:3px;">'+p.titulo+'</div>'
+    +'<div style="font-size:12px;color:var(--t3);line-height:1.4;">'+p.texto+'</div></div>'
+    +'</label>';
+  }).join('');
+  var ov=document.createElement('div');ov.className='mov open';
+  ov.innerHTML='<div class="modal" style="max-width:510px;">'
+  +'<div class="mh"><span class="mh-name">📤 Envío masivo WhatsApp</span><div class="mclose" onclick="this.closest(\'.mov\').remove()">✕</div></div>'
+  +'<div class="mbody" id="wa-masivo-body">'
+  +'<div class="notice" style="margin-bottom:14px;">Se enviará a <strong>'+waPendingMasivo.length+' clientes</strong> con número registrado. Recuerda: en el Sandbox de Twilio sólo llega a números que ya mandaron <code>join men-husband</code>.</div>'
+  +'<div class="fg" style="margin-bottom:10px;"><label class="fl">Elige una plantilla</label>'+plantillasHtml+'</div>'
+  +'<div class="fg" style="margin-bottom:10px;"><label class="fl">Mensaje (puedes editar)</label>'
+  +'<textarea id="wa-masivo-txt" rows="4" style="width:100%;box-sizing:border-box;font-size:13px;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);resize:vertical;font-family:inherit;" oninput="waMasivoPreview()">'+window._waMasivoPlantillas[0].texto+'</textarea></div>'
+  +'<div class="fg"><label class="fl">Vista previa — '+sampleNombre+'</label>'
+  +'<div id="wa-masivo-preview" style="background:#e9fde9;border:1.5px solid #b2e6b2;border-radius:var(--r);padding:10px 12px;font-size:13px;line-height:1.5;">'+window._waMasivoPlantillas[0].texto.replace(/\[Nombre\]/gi,sampleNombre)+'</div></div>'
+  +'</div>'
+  +'<div class="mfoot"><button class="btn-s" onclick="this.closest(\'.mov\').remove()">Cancelar</button>'
+  +'<button class="btn-p" id="wa-masivo-btn" onclick="waEnviarMasivo(this)">📤 Enviar a '+waPendingMasivo.length+' clientes</button></div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+function waMasivoSelectPlantilla(idx){
+  var p=(window._waMasivoPlantillas||[])[idx];
+  if(!p)return;
+  var txt=document.getElementById('wa-masivo-txt');
+  if(txt)txt.value=p.texto;
+  waMasivoPreview();
+}
+
+function waMasivoPreview(){
+  var txt=document.getElementById('wa-masivo-txt');
+  var prev=document.getElementById('wa-masivo-preview');
+  if(!txt||!prev)return;
+  var sampleNombre=((waPendingMasivo[0]&&waPendingMasivo[0].nombre)||'Cliente').split(' ')[0];
+  prev.textContent=txt.value.replace(/\[Nombre\]/gi,sampleNombre);
+}
+
+var _waMasivoEnviados=[];
+var _waMasivoDesde='';
+
+function waEntregaIcono(entrega,ok){
+  if(!ok)return'<span style="color:#e74c3c;">❌</span>';
+  if(entrega==='read')return'<span title="Leído" style="color:#25d366;font-weight:700;">✓✓👁</span>';
+  if(entrega==='delivered')return'<span title="Entregado" style="color:#555;font-weight:700;">✓✓</span>';
+  if(entrega==='sent'||entrega==='enviado')return'<span title="Enviado" style="color:#888;font-weight:700;">✓</span>';
+  if(entrega==='failed'||entrega==='undelivered')return'<span style="color:#e74c3c;" title="Falló">⚠️</span>';
+  return'<span style="color:#aaa;">✓</span>';
+}
+
+function waMasivoRenderTabla(resultados,estados){
+  var estadoMap={};
+  (estados||[]).forEach(function(e){estadoMap[e.telefono]=e;});
+  var ok=resultados.filter(function(r){return r.ok;}).length;
+  var fail=resultados.length-ok;
+  var respondieron=(estados||[]).filter(function(e){return e.respondio;}).length;
+  var rows=resultados.map(function(r){
+    var est=estadoMap[r.telefono]||{};
+    var entrega=r.ok?(est.entrega||r.entrega||'enviado'):'failed';
+    var respondio=est.respondio||false;
+    return'<tr style="border-bottom:1px solid var(--border);">'
+    +'<td style="padding:6px 8px;">'+r.nombre+'</td>'
+    +'<td style="padding:6px 8px;color:var(--t3);font-size:12px;">'+r.telefono+'</td>'
+    +'<td style="padding:6px 8px;text-align:center;">'+waEntregaIcono(entrega,r.ok)+'</td>'
+    +'<td style="padding:6px 8px;text-align:center;">'+(respondio?'<span title="Respondió" style="color:#25d366;">💬</span>':'<span style="color:#ccc;">—</span>')+'</td>'
+    +'</tr>';
+  }).join('');
+  var body=document.getElementById('wa-masivo-body');
+  if(!body)return;
+  body.innerHTML='<div class="notice" style="margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;">'
+  +'<span><strong>✅ Enviados: '+ok+'/'+resultados.length+'</strong></span>'
+  +(fail?'<span>❌ Fallaron: '+fail+'</span>':'')
+  +'<span>💬 Respondieron: '+respondieron+'</span>'
+  +'</div>'
+  +'<div style="max-height:320px;overflow-y:auto;">'
+  +'<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+  +'<thead><tr style="background:var(--bg2);">'
+  +'<th style="padding:7px 8px;text-align:left;font-weight:600;">Nombre</th>'
+  +'<th style="padding:7px 8px;text-align:left;font-weight:600;">Teléfono</th>'
+  +'<th style="padding:7px 8px;text-align:center;font-weight:600;">Entrega</th>'
+  +'<th style="padding:7px 8px;text-align:center;font-weight:600;">Respuesta</th>'
+  +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
+  +'<div style="font-size:11px;color:var(--t3);margin-top:8px;">✓ enviado &nbsp; ✓✓ entregado &nbsp; ✓✓👁 leído &nbsp; 💬 respondió</div>';
+}
+
+function waMasivoActualizarEstados(){
+  if(!_waMasivoEnviados.length)return;
+  var telefonos=_waMasivoEnviados.map(function(r){return r.telefono;}).join(',');
+  waFetch('masivo_estado.php?telefonos='+encodeURIComponent(telefonos)+'&desde='+encodeURIComponent(_waMasivoDesde))
+  .then(function(estados){waMasivoRenderTabla(_waMasivoEnviados,estados);})
+  .catch(function(){});
+}
+
+function waEnviarMasivo(btn){
+  var txtEl=document.getElementById('wa-masivo-txt');
+  var plantilla=txtEl?txtEl.value.trim():'';
+  if(!plantilla){toast('Escribe un mensaje primero','err');return;}
+  btn.disabled=true;btn.textContent='Enviando...';
+  _waMasivoDesde=new Date().toISOString();
+  waFetch('enviar_masivo.php',{method:'POST',headers:waH(),body:JSON.stringify({clientes:waPendingMasivo,plantilla:plantilla})})
+  .then(function(d){
+    _waMasivoEnviados=(d&&d.resultados)||[];
+    waMasivoRenderTabla(_waMasivoEnviados,[]);
+    btn.textContent='🔄 Actualizar estados';btn.disabled=false;
+    btn.onclick=function(){waMasivoActualizarEstados();};
+    var prev=btn.previousElementSibling;
+    if(prev){prev.textContent='Cerrar';prev.onclick=function(){this.closest('.mov').remove();};}
+    setTimeout(waMasivoActualizarEstados,10000);
+    setTimeout(waMasivoActualizarEstados,30000);
+    waLoadConvs();
+  })
+  .catch(function(){toast('Error en envío','err');btn.disabled=false;btn.textContent='Reintentar';});
 }
 </script>
 </body>
