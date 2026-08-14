@@ -901,16 +901,19 @@ function pinClr(){pinBuf='';renderPD();}
 function renderPD(){for(var i=0;i<4;i++){var d=document.getElementById('pd'+i);d.textContent=i<pinBuf.length?'●':'·';d.classList.toggle('on',i<pinBuf.length);}}
 function shk(){document.querySelectorAll('.pd').forEach(function(d){d.classList.add('shk');setTimeout(function(){d.classList.remove('shk');},350);});}
 function doLogin(){
+  // El PIN se valida contra RRHH (mismo PIN sirve para RRHH y CRM). El rol/cartera sigue viviendo local al CRM.
   var err=document.getElementById('lerr');
-  var u=DB.users.find(function(x){return String(x.pin)===pinBuf;});
-  if(u){err.textContent='';CU=u;pinBuf='';renderPD();document.getElementById('s-login').classList.remove('on');launchApp();return;}
-  // Fallback: buscar en Supabase si no está en caché local
   err.textContent='Verificando...';
   var pb=pinBuf;pinBuf='';renderPD();
-  sbF('usuarios','GET',null,'?pin=eq.'+pb+'&select=*').then(function(rows){
-    if(!rows||!rows.length){err.textContent='PIN incorrecto';shk();return;}
-    var nu=_mergeSupabaseUser(rows[0]);
-    if(!nu){err.textContent='PIN incorrecto';shk();return;}
+  fetch(SB_URL+'/rest/v1/rpc/rrhh_login_por_pin',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
+    body:JSON.stringify({p_pin:pb})
+  }).then(function(r){return r.ok?r.json():null;}).then(function(rrhh){
+    if(!rrhh){err.textContent='PIN incorrecto';shk();return;}
+    var codigo=rrhh.codigo;
+    var local=DB.users.find(function(x){return x.id===codigo || (codigo==='ADMIN'&&x.id==='admin');});
+    var nu={id:local?local.id:codigo, name:rrhh.nombre, pin:pb, role:local?local.role:'vendedor', cartera:local?local.cartera:[]};
     err.textContent='';CU=nu;document.getElementById('s-login').classList.remove('on');launchApp();
   }).catch(function(){err.textContent='PIN incorrecto';shk();});
 }
