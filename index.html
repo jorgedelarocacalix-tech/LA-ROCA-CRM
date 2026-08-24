@@ -413,7 +413,6 @@ function loadFromSB(){
         DB.clients[_cid].push({id:c.id,nombre:c.nombre,telefono:c.telefono||'',estado:c.estado||'pendiente',kbCol:c.kb_col||null,kbComments:c.kb_comments||[],totalPagos:c.total_pagos||0,montoTotal:parseFloat(c.monto_total)||0,ultimoPago:c.ultimo_pago||'',primerPago:c.primer_pago||'',antiguedad:parseFloat(c.antiguedad)||0,patron:c.patron||'Mensual',payments:c.payments||[]});
       });
     }
-    if(ge.length){DB.calls=ge.map(function(g){var _crid=(_CM&&_CM[g.cartera_id])||g.cartera_id;return{id:g.id,clientId:g.client_id,carteraId:_crid,userId:g.user_id,userName:g.user_name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};});}
     if(us.length){
       var hardcoded=initDB_users();
       var hardPins=hardcoded.map(function(h){return h.pin;});
@@ -447,6 +446,15 @@ function loadFromSB(){
           // Hardcoded users: cartera comes from initDB_users (already set at login)
         }
       }
+    }
+    if(ge.length){
+      DB.calls=ge.map(function(g){
+        var _crid=(_CM&&_CM[g.cartera_id])||g.cartera_id;
+        // Nombre siempre desde el perfil actual (usuarios), no la copia guardada en la gestión —
+        // así un cambio de nombre en el perfil se refleja también en el historial.
+        var _u=DB.users.find(function(x){return x.id===g.user_id;});
+        return{id:g.id,clientId:g.client_id,carteraId:_crid,userId:g.user_id,userName:(_u&&_u.name)||g.user_name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};
+      });
     }
     if(ld.length){DB.newLeads=ld.map(function(l){return{id:l.id,nombre:l.nombre,telefono:l.telefono||'',fechaContacto:l.fecha_contacto||'',fuente:l.fuente||'',producto:l.producto||'',notas:l.notas||'',leadCol:l.lead_col||'nl',kbComments:l.kb_comments||[],createdBy:l.created_by||'',createdAt:l.created_at||'',assignedTo:l.assigned_to||'',leadCartera:l.lead_cartera||''};});}
     saveDB();
@@ -954,7 +962,7 @@ function launchApp(){
       }).then(function(r){return r.ok?r.json():[];}).then(function(myCalls){
         if(myCalls&&myCalls.length){
           var _CM={'roca2':'roca2motors','moto1':'roca1motors','moto2':'roca2motors','mueble':'sumuebledanli'};
-          var mapped=myCalls.map(function(g){var _crid=(_CM[g.cartera_id])||g.cartera_id;return{id:g.id,clientId:g.client_id,carteraId:_crid,userId:g.user_id,userName:g.user_name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};});
+          var mapped=myCalls.map(function(g){var _crid=(_CM[g.cartera_id])||g.cartera_id;return{id:g.id,clientId:g.client_id,carteraId:_crid,userId:g.user_id,userName:CU.name,date:g.date_str,dateISO:g.date_iso,resultado:g.resultado||'',estado:g.estado||'',producto:g.producto||'',notas:g.notas||'',num2:g.num2||''};});
           // Merge: agregar los que no están en DB.calls
           var existIds=new Set(DB.calls.map(function(x){return x.id;}));
           mapped.forEach(function(x){if(!existIds.has(x.id))DB.calls.push(x);});
@@ -2953,7 +2961,11 @@ async function openMonDetalle(nombre){
     var dias7start=new Date(Date.now()-(6*3600000));
     dias7start.setUTCDate(dias7start.getUTCDate()-6);
     var since=dias7start.toISOString().slice(0,10)+'T06:00:00.000Z';
-    var r=await fetch(SB_URL+'/rest/v1/gestiones?select=*&user_name=eq.'+encodeURIComponent(nombre)+'&created_at=gte.'+encodeURIComponent(since)+'&order=created_at.desc',
+    // Filtrar por user_id (estable) en vez de user_name — el nombre del perfil puede cambiar
+    // y las gestiones viejas no se renombran solas en la base de datos.
+    var _uMon=DB.users.find(function(x){return x.name===nombre;});
+    var _filtroMon=_uMon?('user_id=eq.'+encodeURIComponent(_uMon.id)):('user_name=eq.'+encodeURIComponent(nombre));
+    var r=await fetch(SB_URL+'/rest/v1/gestiones?select=*&'+_filtroMon+'&created_at=gte.'+encodeURIComponent(since)+'&order=created_at.desc',
       {headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Prefer':'count=none'}});
     if(r.ok)calls=await r.json();
   }catch(e){
@@ -3109,15 +3121,21 @@ async function loadMonitor(){
   var KB_LABEL={prospecto:'Prospecto',contactado:'Contactado',interesado:'Interesado',negociando:'Negociando',credito:'Crédito',vendido:'Vendido'};
 
   var [gestDia, gestHist, gestUlt] = await Promise.all([
-    sbGet('gestiones?select=user_name,client_id,cartera_id,resultado&created_at=gte.'+encodeURIComponent(start)+'&created_at=lte.'+encodeURIComponent(end)),
-    sbGet('gestiones?select=user_name,created_at&created_at=gte.'+encodeURIComponent(since14)+'&limit=9999'),
-    sbGet('gestiones?select=user_name,created_at&order=created_at.desc&limit=9999')
+    sbGet('gestiones?select=user_id,user_name,client_id,cartera_id,resultado&created_at=gte.'+encodeURIComponent(start)+'&created_at=lte.'+encodeURIComponent(end)),
+    sbGet('gestiones?select=user_id,user_name,created_at&created_at=gte.'+encodeURIComponent(since14)+'&limit=9999'),
+    sbGet('gestiones?select=user_id,user_name,created_at&order=created_at.desc&limit=9999')
   ]);
+
+  // Nombre siempre desde el perfil actual (usuarios), no la copia guardada en la gestión
+  function _nombreActual(g){
+    var u=DB.users.find(function(x){return x.id===g.user_id;});
+    return (u&&u.name)||g.user_name;
+  }
 
   // Gestiones del día
   var gMap={};
   if(Array.isArray(gestDia)){gestDia.forEach(function(g){
-    var n=g.user_name;
+    var n=_nombreActual(g);
     if(!gMap[n])gMap[n]={total:0,cli:new Set(),cart:new Set(),res:new Set(),tipos:{}};
     var esReal=REALES.indexOf(g.resultado)>=0;
     if(esReal){gMap[n].total++;if(g.client_id)gMap[n].cli.add(g.client_id);}
@@ -3130,7 +3148,7 @@ async function loadMonitor(){
   // Historial 14d
   var hMap={};
   if(Array.isArray(gestHist)){gestHist.forEach(function(g){
-    var n=g.user_name==='ANA'?'Ana Castro':g.user_name;
+    var n=_nombreActual(g);
     var d=new Date(new Date(g.created_at).getTime()-6*3600000);
     var dia=d.toISOString().slice(0,10);
     if(!hMap[n])hMap[n]=new Set();
@@ -3140,7 +3158,7 @@ async function loadMonitor(){
   // Última actividad
   var ultMap={};
   if(Array.isArray(gestUlt)){gestUlt.forEach(function(g){
-    var n=g.user_name==='ANA'?'Ana Castro':g.user_name;
+    var n=_nombreActual(g);
     if(!ultMap[n])ultMap[n]=g.created_at;
   });}
 
