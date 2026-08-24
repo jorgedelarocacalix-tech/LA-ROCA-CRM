@@ -452,9 +452,9 @@ function loadFromSB(){
     saveDB();
   }).catch(function(e){console.error('SB:',e);});}
 
-var SK='lroca_v31';
+var SK='lroca_v32';
 // Clear old storage versions to free space
-(function(){['lroca_v30','lroca_v29','lroca_v28','lroca_v27','lroca_v26','lroca_v25','lroca_v24'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});})();
+(function(){['lroca_v31','lroca_v30','lroca_v29','lroca_v28','lroca_v27','lroca_v26','lroca_v25','lroca_v24'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});})();
 function loadDB(){
   try{
     var d=localStorage.getItem(SK);
